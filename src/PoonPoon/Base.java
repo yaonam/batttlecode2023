@@ -1,0 +1,73 @@
+package PoonPoon;
+import java.util.Random;
+import battlecode.common.*;
+
+
+public class Base {
+    //this class contains all reused variables and methods shared across all robot classes
+    static final Random rng = new Random(6147);
+    static final Direction[] directions = {
+        Direction.NORTH,
+        Direction.NORTHEAST,
+        Direction.EAST,
+        Direction.SOUTHEAST,
+        Direction.SOUTH,
+        Direction.SOUTHWEST,
+        Direction.WEST,
+        Direction.NORTHWEST,
+    };
+
+    static int wellSection = 3; 
+
+    public String initialMapQuadrant(RobotController rc, int starting_x_coord, int starting_y_coord) {
+        String location;
+
+        if (starting_x_coord == -1) {
+            starting_x_coord = rc.getLocation().x;
+            starting_y_coord = rc.getLocation().y;
+        }
+        // Pick a direction to build in. Dependent on location of HQ. We split the map into quadrants. Build units towards the middle of the map. 
+        if (starting_x_coord <= rc.getMapWidth()/2 && starting_y_coord >= rc.getMapHeight()/2) {
+            location = "top left";
+        } 
+        else if (starting_x_coord > rc.getMapWidth()/2 && starting_y_coord > rc.getMapHeight()/2) {
+            location = "top right";
+        }
+        else if (starting_x_coord < rc.getMapWidth()/2 && starting_y_coord <= rc.getMapHeight()/2) {
+            location = "bottom left";
+        } 
+        else {
+            location = "bottom right";
+        }
+
+        return location;
+    }
+
+    public Direction initialDirection (RobotController rc, String quadrant) {
+        //point robot towards the middle of the map
+        Direction direction = null;
+        switch (quadrant) {
+            case "top left":
+                // direction = rc.getLocation().add(Direction.SOUTHEAST);
+                direction = Direction.SOUTHEAST;
+            break;
+
+            case "top right":
+                // direction = rc.getLocation().add(Direction.SOUTHWEST);
+                direction = Direction.SOUTHWEST;
+            break;
+
+            case "bottom left":
+                // direction = rc.getLocation().add(Direction.NORTHEAST);
+                direction = Direction.NORTHEAST;
+            break;
+
+            case "bottom right":
+                // direction = rc.getLocation().add(Direction.NORTHWEST);
+                direction = Direction.NORTHWEST;
+            break;
+        }
+
+        return direction;
+    }
+}
