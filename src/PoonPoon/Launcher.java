@@ -6,6 +6,7 @@ public class Launcher extends Base {
     int starting_y_coord = -1;
     Direction initial_direction = null;
     Direction dir;
+    int HQ_ID;
 
     public void runLauncher(RobotController rc) throws GameActionException {
         // if (starting_x_coord == -1) {
@@ -20,6 +21,10 @@ public class Launcher extends Base {
         //     rc.move(initial_direction);
         // }
 
+        // rc.senseRobot(HQ_ID).getLocation();
+        //perform rotation  or reflection to find enemy HQ. 
+        //
+
         // Try to attack someone
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
@@ -29,6 +34,11 @@ public class Launcher extends Base {
             if (rc.canAttack(toAttack)) {
                 rc.setIndicatorString("Attacking");        
                 rc.attack(toAttack);
+            }
+            //chase enemy target
+            dir = rc.getLocation().directionTo(enemies[0].location);
+            if(rc.canMove(dir)) {
+                rc.move(dir);
             }
         }
 
