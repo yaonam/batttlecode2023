@@ -1,4 +1,5 @@
 package PoonPoon;
+
 import battlecode.common.*;
 import java.util.Set;
 import java.util.Arrays;
@@ -38,15 +39,16 @@ public class Carriers extends Base {
                 if (rc.canCollectResource(wellLocation, -1)) {
                     if (rng.nextBoolean()) {
                         rc.collectResource(wellLocation, -1);
-                        rc.setIndicatorString("Collecting, now have, AD:" + 
-                            rc.getResourceAmount(ResourceType.ADAMANTIUM) + 
-                            " MN: " + rc.getResourceAmount(ResourceType.MANA) + 
-                            " EX: " + rc.getResourceAmount(ResourceType.ELIXIR));
+                        rc.setIndicatorString("Collecting, now have, AD:" +
+                                rc.getResourceAmount(ResourceType.ADAMANTIUM) +
+                                " MN: " + rc.getResourceAmount(ResourceType.MANA) +
+                                " EX: " + rc.getResourceAmount(ResourceType.ELIXIR));
                     }
                 }
             }
         }
-        // If carriers are carrying near max weight and are about to die, perform a carrier attack
+        // If carriers are carrying near max weight and are about to die, perform a
+        // carrier attack
         if (rc.getHealth() < 7 && rc.getWeight() > 30) {
             RobotInfo[] enemyRobots = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
             if (enemyRobots.length > 0) {
@@ -55,30 +57,32 @@ public class Carriers extends Base {
                 }
             }
         }
-        
+
         // If we can see a well, move towards it
         WellInfo[] wells = rc.senseNearbyWells();
         if (wells.length > 1 && rng.nextInt(3) == 1) {
             WellInfo well_one = wells[1];
-            Direction dir = me.directionTo(well_one.getMapLocation());
-            if (rc.canMove(dir)) 
+            // Direction dir = me.directionTo(well_one.getMapLocation());
+            Direction dir = getDirectionsTo(rc, rc.getLocation(), well_one.getMapLocation());
+            if (rc.canMove(dir))
                 rc.move(dir);
         }
-        
+
         // Also try to move randomly.
         // Direction dir = directions[rng.nextInt(directions.length)];
         // if (rc.canMove(dir)) {
-        //     rc.move(dir);
+        // rc.move(dir);
         // }
 
-        //read array for discovered Ad well
-        //wellSection is defined in Base class, how many index spaces a well requires to identify the location and type
+        // read array for discovered Ad well
+        // wellSection is defined in Base class, how many index spaces a well requires
+        // to identify the location and type
         int i = 0;
         while (rc.readSharedArray(i) != 0) {
             if (rc.readSharedArray(i) == 2 && i % wellSection == 0) {
-                //translate the xy coord 
-                MapLocation AdmanWellLocation = new MapLocation(rc.readSharedArray(+1),rc.readSharedArray(i+2));
-                //move to well location, replace following with Elim's path finding methods
+                // translate the xy coord
+                MapLocation AdmanWellLocation = new MapLocation(rc.readSharedArray(+1), rc.readSharedArray(i + 2));
+                // move to well location, replace following with Elim's path finding methods
                 Direction dir = rc.getLocation().directionTo(AdmanWellLocation);
                 if (rc.canMove(dir)) {
                     rc.move(dir);
@@ -87,6 +91,6 @@ public class Carriers extends Base {
             }
             i = i + 3;
         }
-            
+
     }
 }
