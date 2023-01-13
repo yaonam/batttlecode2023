@@ -4,6 +4,7 @@ import battlecode.common.*;
 public class Headquarters extends Base{
     int starting_x_coord = -1;
     int starting_y_coord = -1;
+    MapLocation initial_build_location;
     MapLocation build_location;
     Direction build_Direction;
 
@@ -14,12 +15,12 @@ public class Headquarters extends Base{
         if (wellInfo.length != 0) {
             MapLocation wellLocation = wellInfo[0].getMapLocation();
             build_Direction = rc.getLocation().directionTo(wellLocation);
-            build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
+            initial_build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
         } else {
             starting_x_coord = rc.getLocation().x;
             starting_y_coord = rc.getLocation().y;
             build_Direction = initialBuildDIrection(rc);
-            build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
+            initial_build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
         }
         
         // if (rc.canBuildAnchor(Anchor.STANDARD)) {
@@ -27,36 +28,31 @@ public class Headquarters extends Base{
         //     rc.buildAnchor(Anchor.STANDARD);
         //     rc.setIndicatorString("Building anchor! " + rc.getAnchor());
         // }
-
-        int carrierCountIndex = 12;
             
         //readjust location if HQ cannot build unit at current location. Cannot spawn units in clouds but can spawn units in currents that are not at edge of action radius.
         
-        build_location = findBuildLocation(rc, RobotType.CARRIER, build_location);
+        build_location = findBuildLocation(rc, RobotType.CARRIER, initial_build_location);
+        buildRobot(rc, RobotType.CARRIER);
 
-        // rc.senseMapInfo(build_location).hasCloud() && rc.senseMapInfo(build_location).isPassable()
         // if (rc.canBuildRobot(RobotType.CARRIER, build_location)) {
         //     // Let's try to build a carrier.
         //     rc.setIndicatorString("Trying to build a carrier");
         //     if (rc.canBuildRobot(RobotType.CARRIER, build_location)) {
         //         rc.buildRobot(RobotType.CARRIER, build_location);
-        //         rc.writeSharedArray(carrierCountIndex, rc.readSharedArray(carrierCountIndex)+1);
         //     }
         // } 
 
-        buildRobot(rc, RobotType.CARRIER, build_location);
         
-        int launcherCountIndex = 13;
+        
         // if (rc.canBuildRobot(RobotType.LAUNCHER, build_location)) {
         //     // Let's try to build a launcher.
         //     rc.setIndicatorString("Trying to build a launcher");
         //     if (rc.canBuildRobot(RobotType.LAUNCHER, build_location)) {
         //         rc.buildRobot(RobotType.LAUNCHER, build_location);
-        //         rc.writeSharedArray(launcherCountIndex, rc.readSharedArray(launcherCountIndex)+1);
         //     }
         // }
-
-        buildRobot(rc, RobotType.LAUNCHER, build_location);
+        // build_location = findBuildLocation(rc, RobotType.LAUNCHER, initial_build_location);
+        buildRobot(rc, RobotType.LAUNCHER);
 
         //build an amplifier if possible and the amout of amplifiers are too few
         // int ampCountIndex = 14;
@@ -81,16 +77,18 @@ public class Headquarters extends Base{
             && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
             ) {
             build_location = build_location.subtract(build_Direction);
+            System.out.println("finding location");
         }
         return build_location;
     }
 
-    public void buildRobot(RobotController rc, RobotType robotType, MapLocation location) throws GameActionException{
-        if (rc.canBuildRobot(robotType, location)) {
+    public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException{
+        if (rc.canBuildRobot(robotType, build_location)) {
             // Let's try to build a robot.
             rc.setIndicatorString("Trying to build a " + robotType);
-            if (rc.canBuildRobot(robotType, location)) {
-                rc.buildRobot(robotType, location);
+            System.out.println("Trying to build a " + robotType);
+            if (rc.canBuildRobot(robotType, build_location)) {
+                rc.buildRobot(robotType, build_location);
                 // rc.writeSharedArray(carrierCountIndex, rc.readSharedArray(carrierCountIndex)+1);
             }
         } 
