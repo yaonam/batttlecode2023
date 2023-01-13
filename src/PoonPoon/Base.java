@@ -47,19 +47,15 @@ public class Base {
         Direction direction = null;
         switch (quadrant) {
             case "top left":
-                // direction = rc.getLocation().add(Direction.SOUTHEAST);
                 direction = Direction.SOUTHEAST;
                 break;
             case "top right":
-                // direction = rc.getLocation().add(Direction.SOUTHWEST);
                 direction = Direction.SOUTHWEST;
                 break;
             case "bottom left":
-                // direction = rc.getLocation().add(Direction.NORTHEAST);
                 direction = Direction.NORTHEAST;
                 break;
             case "bottom right":
-                // direction = rc.getLocation().add(Direction.NORTHWEST);
                 direction = Direction.NORTHWEST;
                 break;
         }
