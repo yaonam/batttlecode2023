@@ -70,8 +70,6 @@ public class Base {
     /**
      * getDirectionsTo() is a helper that returns the next optimal move given a
      * target destination.
-     * Plan is to identify and randomly try move(s) that will decrease distance to
-     * destination.
      * If all "optimal" spaces blocked, then move randomly.
      * Return CENTER if no possible moves.
      **/
@@ -80,6 +78,7 @@ public class Base {
 
         int mood = rng.nextInt(3);
 
+        // Identify and randomly try move(s) that will decrease distance to destination.
         switch (mood) {
             case 0:
                 if (rc.canMove(approxDir)) {
@@ -96,6 +95,19 @@ public class Base {
         }
 
         // Cycle through directions, starting randomly
-        return directions[rng.nextInt(8)];
+        int startingPoint = rng.nextInt(7);
+        for (int i = startingPoint; i >= startingPoint; i++) {
+            if (rc.canMove(directions[i])) {
+                return directions[i];
+            }
+        }
+        for (int i = 0; i < startingPoint; i++) {
+            if (rc.canMove(directions[i])) {
+                return directions[i];
+            }
+        }
+
+        // Return Directions.CENTER if no possible move
+        return Direction.CENTER;
     }
 }
