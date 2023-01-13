@@ -69,6 +69,7 @@ public class Base {
      * Plan is to identify and randomly try move(s) that will decrease distance to
      * destination.
      * If all "optimal" spaces blocked, then move randomly.
+     * Return CENTER if no possible moves.
      **/
     public static Direction getDirectionsTo(RobotController rc, MapLocation from, MapLocation to) {
         Direction approxDir = from.directionTo(to);
@@ -90,6 +91,7 @@ public class Base {
                 }
         }
 
+        // Cycle through directions, starting randomly
         return directions[rng.nextInt(8)];
     }
 }
