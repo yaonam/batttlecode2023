@@ -30,37 +30,11 @@ public class Headquarters extends Base{
         // }
             
         //readjust location if HQ cannot build unit at current location. Cannot spawn units in clouds but can spawn units in currents that are not at edge of action radius.
-        
-        build_location = findBuildLocation(rc, RobotType.CARRIER, initial_build_location);
+        build_location = adjustBuildLocation(rc, RobotType.CARRIER, initial_build_location);
         buildRobot(rc, RobotType.CARRIER);
 
-        // if (rc.canBuildRobot(RobotType.CARRIER, build_location)) {
-        //     // Let's try to build a carrier.
-        //     rc.setIndicatorString("Trying to build a carrier");
-        //     if (rc.canBuildRobot(RobotType.CARRIER, build_location)) {
-        //         rc.buildRobot(RobotType.CARRIER, build_location);
-        //     }
-        // } 
-
-        
-        
-        // if (rc.canBuildRobot(RobotType.LAUNCHER, build_location)) {
-        //     // Let's try to build a launcher.
-        //     rc.setIndicatorString("Trying to build a launcher");
-        //     if (rc.canBuildRobot(RobotType.LAUNCHER, build_location)) {
-        //         rc.buildRobot(RobotType.LAUNCHER, build_location);
-        //     }
-        // }
-        // build_location = findBuildLocation(rc, RobotType.LAUNCHER, initial_build_location);
+        build_location = adjustBuildLocation(rc, RobotType.LAUNCHER, initial_build_location);
         buildRobot(rc, RobotType.LAUNCHER);
-
-        //build an amplifier if possible and the amout of amplifiers are too few
-        // int ampCountIndex = 14;
-        // if (rc.canBuildRobot(RobotType.AMPLIFIER, build_location) && rc.readSharedArray(ampCountIndex) < 2) {
-        //     rc.setIndicatorString("Trying to build an amplifier");
-        //     rc.buildRobot(RobotType.AMPLIFIER, build_location);
-        //     rc.writeSharedArray(ampCountIndex, rc.readSharedArray(ampCountIndex)+1);
-        // }
     }
 
     public Direction initialBuildDIrection (RobotController rc) {
@@ -68,18 +42,19 @@ public class Headquarters extends Base{
         return initialDirection(rc, quadrant);
     }
 
-    //The extra conditions prevent the method from changing the location due to a lack of resources. A lack of resources will stop the while loop.
-    public MapLocation findBuildLocation(RobotController rc, RobotType robotType, MapLocation build_location) {
+    //The extra conditions prevent the method from changing the location due to a lack of resources or when location is too far away. A lack of resources will stop the while loop.
+    public MapLocation adjustBuildLocation(RobotController rc, RobotType robotType, MapLocation location) {
         while (
-            !(rc.canBuildRobot(robotType, build_location)) 
+            !(rc.canBuildRobot(robotType, location)) 
             && robotType.buildCostAdamantium <= rc.getResourceAmount(ResourceType.ADAMANTIUM) 
             && robotType.buildCostMana <= rc.getResourceAmount(ResourceType.MANA)
             && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
+            && !rc.canActLocation(location)
             ) {
-            build_location = build_location.subtract(build_Direction);
-            System.out.println("finding location");
+            location = location.subtract(build_Direction);
+            System.out.println("finding location. Currently at: "+ location);
         }
-        return build_location;
+        return location;
     }
 
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException{
