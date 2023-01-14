@@ -86,8 +86,8 @@ public class Carriers extends Base {
             i = i + 3;
         }
 
-        // Also try to move randomly.
-        Direction dir = getRandDirection(rc);
+        // If nothing else, explore
+        Direction dir = getExploreDirection(rc);
         if (rc.canMove(dir)) {
             rc.move(dir);
         }

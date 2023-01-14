@@ -116,7 +116,8 @@ public class Base {
     }
 
     /**
-     * 
+     * getExploreDirection() gives a direction that tries to point away from
+     * other robots on your team.
      */
     public static Direction getExploreDirection(RobotController rc) {
         // find nearby robots
@@ -131,7 +132,7 @@ public class Base {
         // avg all the locations of the nearby robots
         MapLocation thisLoc = rc.getLocation();
         MapLocation avgRobotLoc = rc.getLocation();
-        for (int i = 0; i < nearbyRobots.length;)
+        for (int i = 0; i < nearbyRobots.length; i++)
             avgRobotLoc.add(thisLoc.directionTo(nearbyRobots[i].getLocation()));
         Direction awayDirection = avgRobotLoc.directionTo(thisLoc);
 
