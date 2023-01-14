@@ -151,7 +151,7 @@ public class Base {
 
         Direction dir = null;
         if (rc.getLocation().distanceSquaredTo(location) >= 16) {
-            dir = getDirectionsTo(rc, rc.getLocation(), location);
+            dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
             rc.move(dir);
             }
