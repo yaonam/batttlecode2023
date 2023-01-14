@@ -100,7 +100,7 @@ public class Base {
     public static Direction getRandDirection(RobotController rc) {
         // Cycle through directions, starting randomly
         int startingPoint = rng.nextInt(7);
-        for (int i = startingPoint; i >= startingPoint; i++) {
+        for (int i = startingPoint; i < 8; i++) {
             if (rc.canMove(directions[i])) {
                 return directions[i];
             }
@@ -111,5 +111,29 @@ public class Base {
             }
         }
         return Direction.CENTER;
+    }
+
+    /**
+     * 
+     */
+    public static Direction getExploreDirection(RobotController rc) {
+        // find nearby robots
+        RobotInfo[] nearbyRobots;
+        try {
+            nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        } catch (GameActionException e) {
+            return getRandDirection(rc);
+        }
+
+        // figure out "outermost" direction
+        // avg all the locations of the nearby robots
+        MapLocation thisLoc = rc.getLocation();
+        MapLocation avgRobotLoc = rc.getLocation();
+        for (int i = 0; i < nearbyRobots.length;)
+            avgRobotLoc.add(thisLoc.directionTo(nearbyRobots[i].getLocation()));
+        Direction awayDirection = avgRobotLoc.directionTo(thisLoc);
+
+        // try to move that way
+        return getDirectionsTo(rc, thisLoc.add(awayDirection));
     }
 }
