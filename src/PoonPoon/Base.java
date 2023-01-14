@@ -6,6 +6,11 @@ import battlecode.common.*;
 public class Base {
     // this class contains all reused variables and methods shared across all robot
     // classes
+    final int quad1 = 7;
+    final int quad2 = 1;
+    final int quad3 = 5;
+    final int quad4 = 3;
+    int HQ_count_index = 63;
     static final Random rng = new Random(6147);
     static final Direction[] directions = {
             Direction.NORTH,
@@ -20,42 +25,39 @@ public class Base {
 
     static int wellSection = 3;
 
-    public String initialMapQuadrant(RobotController rc, int starting_x_coord, int starting_y_coord) {
-        String location;
-
-        if (starting_x_coord == -1) {
-            starting_x_coord = rc.getLocation().x;
-            starting_y_coord = rc.getLocation().y;
-        }
+    public Integer initialMapQuadrant(RobotController rc) {
+        int location;
+        int starting_x_coord = rc.getLocation().x;
+        int starting_y_coord = rc.getLocation().y;
         // Pick a direction to build in. Dependent on location of HQ. We split the map
         // into quadrants. Build units towards the middle of the map.
         if (starting_x_coord <= rc.getMapWidth() / 2 && starting_y_coord >= rc.getMapHeight() / 2) {
-            location = "top left";
+            location = quad1; //top left
         } else if (starting_x_coord > rc.getMapWidth() / 2 && starting_y_coord > rc.getMapHeight() / 2) {
-            location = "top right";
+            location = quad2; //top right
         } else if (starting_x_coord < rc.getMapWidth() / 2 && starting_y_coord <= rc.getMapHeight() / 2) {
-            location = "bottom left";
+            location = quad3; //bottom left
         } else {
-            location = "bottom right";
+            location = quad4; //bottom right
         }
 
         return location;
     }
 
-    public Direction initialDirection(RobotController rc, String quadrant) {
+    public Direction initialDirection(RobotController rc, int quadrant) {
         // point robot towards the middle of the map
         Direction direction = null;
         switch (quadrant) {
-            case "top left":
+            case quad1:
                 direction = Direction.SOUTHEAST;
                 break;
-            case "top right":
+            case quad2:
                 direction = Direction.SOUTHWEST;
                 break;
-            case "bottom left":
+            case quad3:
                 direction = Direction.NORTHEAST;
                 break;
-            case "bottom right":
+            case quad4:
                 direction = Direction.NORTHWEST;
                 break;
         }
@@ -100,16 +102,65 @@ public class Base {
     public static Direction getRandDirection(RobotController rc) {
         // Cycle through directions, starting randomly
         int startingPoint = rng.nextInt(7);
-        for (int i = startingPoint; i >= startingPoint; i++) {
-            if (rc.canMove(directions[i])) {
-                return directions[i];
-            }
-        }
+        // for (int i = startingPoint; i >= startingPoint; i++) {
+        //     if (rc.canMove(directions[i])) {
+        //         return directions[i];
+        //     }
+        // }
         for (int i = 0; i < startingPoint; i++) {
             if (rc.canMove(directions[i])) {
                 return directions[i];
             }
         }
         return Direction.CENTER;
+    }
+
+    //work in progress
+    public int foundEnemyHQ(RobotController rc) throws GameActionException{
+        int quadrant = 0;
+        int enemyHQ = 0;
+        RobotInfo[] enemies = rc.senseNearbyRobots();
+        for (RobotInfo info : enemies) {
+            if (info.getType() == RobotType.HEADQUARTERS) {
+                if (rc.canWriteSharedArray(enemyHQ, quadrant)) {
+                    rc.writeSharedArray(enemyHQ, quadrant);
+                }
+            }
+        }
+        return quadrant;
+    }
+
+    public void targetQuadrant (RobotController rc, int quadrant) throws GameActionException{
+
+        MapLocation location = null;
+        switch (quadrant) {
+            case quad1:
+                location = new MapLocation(rc.getMapWidth()/4,rc.getMapHeight() - rc.getMapHeight()/4);
+                break;
+            case quad2:
+                location = new MapLocation(rc.getMapWidth() - rc.getMapWidth()/4, rc.getMapHeight() - rc.getMapHeight()/4);
+                break;
+            case quad3:
+                location = new MapLocation(rc.getMapWidth()/4, rc.getMapHeight()/4);
+                break;
+            case quad4:
+                location = new MapLocation(rc.getMapWidth() - rc.getMapWidth()/4, rc.getMapHeight()/4);
+                break;
+            
+        }
+
+        Direction dir = null;
+        if (rc.getLocation().distanceSquaredTo(location) >= 16) {
+            dir = getDirectionsTo(rc, rc.getLocation(), location);
+            if (rc.canMove(dir)) {
+            rc.move(dir);
+            }
+        }
+        else {
+            dir = directions[rng.nextInt(directions.length)];
+            if (rc.canMove(dir)) {
+            rc.move(dir);
+            }
+        }
     }
 }
