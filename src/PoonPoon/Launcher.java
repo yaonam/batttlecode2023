@@ -1,4 +1,6 @@
 package PoonPoon;
+import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class Launcher extends Base {
@@ -7,24 +9,9 @@ public class Launcher extends Base {
     Direction initial_direction = null;
     Direction dir;
     int HQ_ID;
+    
 
     public void runLauncher(RobotController rc) throws GameActionException {
-        // if (starting_x_coord == -1) {
-        //     starting_x_coord = rc.getLocation().x;
-        //     starting_y_coord = rc.getLocation().y;
-        //     System.out.println("I'm finding my location");
-        //     initial_direction = this.initialMoveDirection(rc);
-        // }
-
-        // //move towards the middle of the map
-        // if (rc.canMove(initial_direction)) {
-        //     rc.move(initial_direction);
-        // }
-
-        // rc.senseRobot(HQ_ID).getLocation();
-        //perform rotation  or reflection to find enemy HQ. 
-        //
-
         // Try to attack someone
         int radius = rc.getType().actionRadiusSquared;
         Team opponent = rc.getTeam().opponent();
@@ -35,22 +22,50 @@ public class Launcher extends Base {
                 rc.setIndicatorString("Attacking");        
                 rc.attack(toAttack);
             }
-            //chase enemy target
+            //chase enemy target, move randomly if they cannot move in that direction, avoid currents
             dir = rc.getLocation().directionTo(enemies[0].location);
-            if(rc.canMove(dir)) {
+            if(rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
                 rc.move(dir);
+            }
+            else {
+                dir = directions[rng.nextInt(directions.length)];
+                if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
+                rc.move(dir);
+                }
             }
         }
 
-        // Also try to move randomly.
-        dir = directions[rng.nextInt(directions.length)];
-        if (rc.canMove(dir)) {
-            rc.move(dir);
+        // move towards other quadrants when no nearby enemies are present. Once there, launchers will roam around.
+        //find number of hq
+        if (enemies.length <= 0) {            
+            // in index 63, we saved our hq count in the tens digit and our target quadrant count in the ones digit
+            int quadIndex = rc.readSharedArray(HQ_count_index);   
+            int hq = Integer.parseInt(Integer.toString(quadIndex).substring(0, 1));
+            int targetQuadrants = Integer.parseInt(Integer.toString(quadIndex).substring(1, 2));
+            int index = rc.getID() % targetQuadrants;
+            int quadrant = rc.readSharedArray(HQ_count_index - hq - targetQuadrants + index);
+            // System.out.println("MOVING TO QUADRANT: " + quadrant);
+            targetQuadrant(rc, quadrant);
         }
     }
 
-    public Direction initialMoveDirection (RobotController rc) {
-        String quadrant = initialMapQuadrant(rc, starting_x_coord, starting_y_coord);
-        return initialDirection(rc, quadrant);
+    public Direction initialMoveDirection (RobotController rc) throws GameActionException{
+        int quadAdd = 5;//rc.readSharedArray(HQ_quadrants);
+        int num;
+        ArrayList<Integer> list = new ArrayList<Integer>();
+        for (int i = 0; i < directions.length; i++) {
+            list.add(i, i);
+        }
+
+
+        do  {
+            num = rng.nextInt(directions.length);
+        }
+        while (quadAdd+2 >= num && num <= quadAdd-2);
+        dir = directions[rng.nextInt(directions.length)];
+
+
+        Direction direction = null;
+        return direction;
     }
 }
