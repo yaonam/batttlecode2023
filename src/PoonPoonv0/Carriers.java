@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonv0;
 
 import battlecode.common.*;
 import java.util.Set;
@@ -63,10 +63,16 @@ public class Carriers extends Base {
         if (wells.length > 1 && rng.nextInt(3) == 1) {
             WellInfo well_one = wells[1];
             // Direction dir = me.directionTo(well_one.getMapLocation());
-            Direction dir = getDirectionsTo(rc, well_one.getMapLocation());
+            Direction dir = getDirectionsTo(rc, rc.getLocation(), well_one.getMapLocation());
             if (rc.canMove(dir))
                 rc.move(dir);
         }
+
+        // Also try to move randomly.
+        // Direction dir = directions[rng.nextInt(directions.length)];
+        // if (rc.canMove(dir)) {
+        // rc.move(dir);
+        // }
 
         // read array for discovered Ad well
         // wellSection is defined in Base class, how many index spaces a well requires
@@ -84,12 +90,6 @@ public class Carriers extends Base {
                 }
             }
             i = i + 3;
-        }
-
-        // Also try to move randomly.
-        Direction dir = getRandDirection(rc);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
         }
 
     }

@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonv0;
 
 import java.util.Random;
 import battlecode.common.*;
@@ -69,8 +69,8 @@ public class Base {
      * If all "optimal" spaces blocked, then move randomly.
      * Return CENTER if no possible moves.
      **/
-    public static Direction getDirectionsTo(RobotController rc, MapLocation to) {
-        Direction approxDir = rc.getLocation().directionTo(to);
+    public static Direction getDirectionsTo(RobotController rc, MapLocation from, MapLocation to) {
+        Direction approxDir = from.directionTo(to);
 
         int mood = rng.nextInt(3);
 
@@ -90,14 +90,6 @@ public class Base {
                 }
         }
 
-        return getRandDirection(rc);
-    }
-
-    /**
-     * getRandDirection() is a helper that returns a random, valid direction
-     * to move towards. If no such move is possible, it returns Directions.CENTER
-     **/
-    public static Direction getRandDirection(RobotController rc) {
         // Cycle through directions, starting randomly
         int startingPoint = rng.nextInt(7);
         for (int i = startingPoint; i >= startingPoint; i++) {
@@ -110,6 +102,8 @@ public class Base {
                 return directions[i];
             }
         }
+
+        // Return Directions.CENTER if no possible move
         return Direction.CENTER;
     }
 }
