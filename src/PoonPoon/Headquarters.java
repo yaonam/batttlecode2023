@@ -28,6 +28,7 @@ public class Headquarters extends Base {
             buildRobot(rc, RobotType.CARRIER);
         }
 
+        uploadResources(rc);
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
@@ -136,5 +137,17 @@ public class Headquarters extends Base {
             writeToCommsArray(rc, index + 2 , well_location.y);
             System.out.println("HERE1111111111 at index " + index + ": " + rc.readSharedArray(index) + ", " + rc.readSharedArray(index + 1) + ", " + rc.readSharedArray(index + 2));
         }
+    }
+
+    public void uploadResources(RobotController rc) throws GameActionException {
+        if (rc.getRoundNum() % 10 == 0 ) {
+            rc.setIndicatorString("UPLOADING TO COMMS ARRAY: " + rc.getResourceAmount(ResourceType.ADAMANTIUM) + "," 
+                + rc.getResourceAmount(ResourceType.MANA) + ", " 
+                + rc.getResourceAmount(ResourceType.MANA));
+            rc.writeSharedArray(adamantiumIndex, rc.getResourceAmount(ResourceType.ADAMANTIUM));
+            rc.writeSharedArray(manaIndex, rc.getResourceAmount(ResourceType.MANA));
+            rc.writeSharedArray(elixirIndex, rc.getResourceAmount(ResourceType.MANA));
+        }
+
     }
 }

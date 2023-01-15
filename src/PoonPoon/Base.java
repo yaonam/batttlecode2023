@@ -12,8 +12,12 @@ public abstract class Base {
     final int quad4 = 3;
     int hq_section_index = 0;
     int quad_section = 9;
-    int attack_location_section = 12;
-    int well_section = 20;
+    int resource_section = 12;
+        int adamantiumIndex = resource_section;
+        int manaIndex = resource_section + 1;
+        int elixirIndex = resource_section +2;
+    int attack_location_section = 15;
+    int well_section = 23;
     int arrayLength = 63;
 
     int hq_section_increment = 2;
