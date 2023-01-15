@@ -13,9 +13,9 @@ public abstract class Base {
     int hq_section_index = 0;
     int quad_section = 9;
     int resource_section = 12;
-        int adamantiumIndex = resource_section;
-        int manaIndex = resource_section + 1;
-        int elixirIndex = resource_section +2;
+    int adamantiumIndex = resource_section;
+    int manaIndex = resource_section + 1;
+    int elixirIndex = resource_section + 2;
     int attack_location_section = 15;
     int well_section = 23;
     int arrayLength = 63;
@@ -211,17 +211,13 @@ public abstract class Base {
         return startIndex;
     }
 
-    public RobotInfo[] scanForRobots (RobotController rc) throws GameActionException{
+    public RobotInfo[] scanForRobots(RobotController rc) throws GameActionException {
         Team opponent = rc.getTeam().opponent();
-        return rc.senseNearbyRobots(-1, opponent); 
+        return rc.senseNearbyRobots(-1, opponent);
     }
 
-    public void moveToLocation(RobotController rc, int x, int y) throws GameActionException{
-        // x = rng.nextInt(rc.getMapWidth());
-        // y = rng.nextInt(rc.getMapHeight());
-
-        MapLocation location= new MapLocation(x, y);
-        Direction dir = getDirectionsTo(rc, location);
+    public void moveToLocation(RobotController rc, MapLocation to) throws GameActionException {
+        Direction dir = getDirectionsTo(rc, to);
         if (rc.canMove(dir)) {
             rc.move(dir);
         }

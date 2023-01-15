@@ -10,39 +10,14 @@ import java.util.Set;
 /**
  * RobotPlayer is the class that describes your main robot strategy.
  * The run() method inside this class is like your main function: this is what
- * we'll call once your robot
- * is created!
+ * we'll call once your robot is created!
  */
 
-
 public strictfp class RobotPlayer {
-    static Headquarters hq = new Headquarters();
-    static Carriers cr = new Carriers();
-    static Launcher launcher = new Launcher();
-
-
-    /**
-     * We will use this variable to count the number of turns this robot has been
-     * alive.
-     * You can use static variables like this to save any information you want. Keep
-     * in mind that even though
-     * these variables are static, in Battlecode they aren't actually shared between
-     * your robots.
-     */
     static int turnCount = 0;
 
-    /**
-     * A random number generator.
-     * We will use this RNG to make some random moves. The Random class is provided
-     * by the java.util.Random
-     * import at the top of this file. Here, we *seed* the RNG with a constant
-     * number (6147); this makes sure
-     * we get the same sequence of numbers every time this code is run. This is very
-     * useful for debugging!
-     */
     static final Random rng = new Random(6147);
 
-    /** Array containing all the possible movement directions. */
     static final Direction[] directions = {
             Direction.NORTH,
             Direction.NORTHEAST,
@@ -61,9 +36,8 @@ public strictfp class RobotPlayer {
      * robot dies!
      *
      * @param rc The RobotController object. You use it to perform actions from this
-     *           robot, and to get
-     *           information on its current status. Essentially your portal to
-     *           interacting with the world.
+     *           robot, and to get information on its current status. Essentially
+     *           your portal to interacting with the world.
      **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
@@ -92,11 +66,9 @@ public strictfp class RobotPlayer {
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in
-            // an infinite
-            // loop. If we ever leave this loop and return from run(), the robot dies! At
-            // the end of the
-            // loop, we call Clock.yield(), signifying that we've done everything we want to
-            // do.
+            // an infinite loop. If we ever leave this loop and return from run(), the robot
+            // dies! At the end of the loop, we call Clock.yield(), signifying that we've
+            // done everything we want to do.
 
             turnCount += 1; // We have now been alive for one more turn!
 
@@ -108,17 +80,10 @@ public strictfp class RobotPlayer {
                 rb.run(rc);
 
             } catch (GameActionException e) {
-                // Oh no! It looks like we did something illegal in the Battlecode world. You
-                // should
-                // handle GameActionExceptions judiciously, in case unexpected events occur in
-                // the game
-                // world. Remember, uncaught exceptions cause your robot to explode!
                 System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
 
             } catch (Exception e) {
-                // Oh no! It looks like our code tried to do something bad. This isn't a
-                // GameActionException, so it's more likely to be a bug in our code.
                 System.out.println(rc.getType() + " Exception");
                 e.printStackTrace();
 
@@ -136,5 +101,4 @@ public strictfp class RobotPlayer {
         // imminent...
     }
 
-    
 }
