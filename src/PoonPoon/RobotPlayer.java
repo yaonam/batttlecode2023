@@ -24,7 +24,7 @@ public strictfp class RobotPlayer {
      * your robots.
      */
     static int turnCount = 0;
-    
+
     /**
      * A random number generator.
      * We will use this RNG to make some random moves. The Random class is provided
@@ -61,14 +61,28 @@ public strictfp class RobotPlayer {
      **/
     @SuppressWarnings("unused")
     public static void run(RobotController rc) throws GameActionException {
+        // Instantiate based on robot type
+        Base rb = null;
+        switch (rc.getType()) {
+            case AMPLIFIER:
+                rb = new Amplifier();
+                break;
+            case CARRIER:
+                rb = new Carriers();
+                break;
+            case HEADQUARTERS:
+                rb = new Headquarters();
+                break;
+            case LAUNCHER:
+                rb = new Launcher();
+                break;
+            case BOOSTER:
+                break;
+            case DESTABILIZER:
+                break;
+        }
 
-        // Hello world! Standard output is very useful for debugging.
-        // Everything you say here will be directly viewable in your terminal when you
-        // run a match!
-        System.out.println("I'm a " + rc.getType() + " and I just got created! I have health " + rc.getHealth());
-
-        // You can also use indicators to save debug notes in replays.
-        rc.setIndicatorString("Hello world!");
+        System.out.println(rb);
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in
@@ -84,30 +98,8 @@ public strictfp class RobotPlayer {
             // explode.
             try {
                 // The same run() function is called for every robot on your team, even if they
-                // are
-                // different types. Here, we separate the control depending on the RobotType, so
-                // we can
-                // use different strategies on different robots. If you wish, you are free to
-                // rewrite
-                // this into a different control structure!
-                switch (rc.getType()) {
-                    case HEADQUARTERS:
-                        runHeadquarters(rc);
-                        break;
-                    case CARRIER:
-                        runCarrier(rc);
-                        break;
-                    case LAUNCHER:
-                        runLauncher(rc);
-                        break;
-                    case BOOSTER:
-                        break;// Examplefuncsplayer doesn't use any of these robot types below.
-                    case DESTABILIZER:
-                        break; // You might want to give them a try!
-                    case AMPLIFIER:
-                        runAmplifier(rc);
-                        break;
-                }
+                // are different types.
+                rb.run(rc);
 
             } catch (GameActionException e) {
                 // Oh no! It looks like we did something illegal in the Battlecode world. You
@@ -145,7 +137,7 @@ public strictfp class RobotPlayer {
      */
     static void runHeadquarters(RobotController rc) throws GameActionException {
         Headquarters hq = new Headquarters();
-        hq.runHeadquarters(rc);
+        hq.run(rc);
     }
 
     /**
@@ -155,7 +147,7 @@ public strictfp class RobotPlayer {
      */
     static void runCarrier(RobotController rc) throws GameActionException {
         Carriers cr = new Carriers();
-        cr.runCarrier(rc);
+        cr.run(rc);
     }
 
     /**
@@ -165,11 +157,11 @@ public strictfp class RobotPlayer {
      */
     static void runLauncher(RobotController rc) throws GameActionException {
         Launcher launcher = new Launcher();
-        launcher.runLauncher(rc);
+        launcher.run(rc);
     }
 
     static void runAmplifier(RobotController rc) throws GameActionException {
         Amplifier amp = new Amplifier();
-        amp.runAmplifier(rc);
+        amp.run(rc);
     }
 }

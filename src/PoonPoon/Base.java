@@ -3,7 +3,7 @@ package PoonPoon;
 import java.util.Random;
 import battlecode.common.*;
 
-public class Base {
+public abstract class Base {
     // this class contains all reused variables and methods shared across all robot
     // classes
     final int quad1 = 7;
@@ -12,7 +12,7 @@ public class Base {
     final int quad4 = 3;
     int hq_section_index = 0;
     int arrayLength = 63;
-    int quadRadiusFraction = 3/16;
+    int quadRadiusFraction = 3 / 16;
     static final Random rng = new Random(6147);
     static final Direction[] directions = {
             Direction.NORTH,
@@ -26,6 +26,8 @@ public class Base {
     };
 
     static int wellSection = 3;
+
+    public abstract void run(RobotController rc) throws GameActionException;
 
     public Integer initialMapQuadrant(RobotController rc) {
         int location;
@@ -178,7 +180,8 @@ public class Base {
         }
 
         Direction dir = null;
-        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
+        if (location != null
+                && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
             dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -191,7 +194,8 @@ public class Base {
         }
     }
 
-    public int iterateArray(RobotController rc, int startIndex, int loopCount, int increment) throws GameActionException{
+    public int iterateArray(RobotController rc, int startIndex, int loopCount, int increment)
+            throws GameActionException {
         startIndex += loopCount * increment;
         return startIndex;
     }
