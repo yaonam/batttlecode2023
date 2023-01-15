@@ -11,7 +11,21 @@ public abstract class Base {
     final int quad3 = 5;
     final int quad4 = 3;
     int hq_section_index = 0;
+    int quad_section = 9;
+    int attack_location_section = 12;
+    int well_section = 20;
     int arrayLength = 63;
+
+    int hq_section_increment = 2;
+    int well_section_increment = 3;
+    int attack_section_increment = 2;
+
+    int adamantiumID = 1;
+    int manaID = 2;
+    int elixirID = 3;
+
+    int carrier_inventory = 40;
+
     int quadRadiusFraction = 3 / 16;
     static final Random rng = new Random(6147);
     static final Direction[] directions = {
@@ -24,8 +38,6 @@ public abstract class Base {
             Direction.WEST,
             Direction.NORTHWEST,
     };
-
-    static int wellSection = 3;
 
     public abstract void run(RobotController rc) throws GameActionException;
 
@@ -193,5 +205,39 @@ public abstract class Base {
             throws GameActionException {
         startIndex += loopCount * increment;
         return startIndex;
+    }
+
+    public RobotInfo[] scanForRobots (RobotController rc) throws GameActionException{
+        Team opponent = rc.getTeam().opponent();
+        return rc.senseNearbyRobots(-1, opponent); 
+    }
+
+    public void moveToLocation(RobotController rc, int x, int y) throws GameActionException{
+        // x = rng.nextInt(rc.getMapWidth());
+        // y = rng.nextInt(rc.getMapHeight());
+
+        MapLocation location= new MapLocation(x, y);
+        Direction dir = getDirectionsTo(rc, location);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        }
+    }
+
+    public int convertResourcetoInt(ResourceType type) {
+        int id = 0;
+        switch (type) {
+            case ADAMANTIUM:
+                id = adamantiumID;
+                break;
+            case MANA:
+                id = manaID;
+                break;
+            case ELIXIR:
+                id = elixirID;
+                break;
+            default:
+                break;
+        }
+        return id;
     }
 }

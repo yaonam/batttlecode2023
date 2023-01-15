@@ -10,15 +10,8 @@ public class Launcher extends Base {
     int HQ_ID;
 
     public void run(RobotController rc) throws GameActionException {
-        // scan for enemies
-        // scan for enemies
-        int radius = rc.getType().actionRadiusSquared;
-        Team opponent = rc.getTeam().opponent();
-        RobotInfo[] enemies = rc.senseNearbyRobots(radius, opponent);
-
-        // attack the first detected enemy unit that isn't the hq
-
-        // attack the first detected enemy unit that isn't the hq
+        // scan for enemies and attack the first detected enemy unit that isn't the hq
+        RobotInfo[] enemies = scanForRobots(rc);
         if (enemies.length > 0) {
             attackEnemy(rc, enemies);
             attackEnemy(rc, enemies);
@@ -28,18 +21,15 @@ public class Launcher extends Base {
         if (enemies.length <= 0) {
             movetoQuadrant(rc);
         }
-
     }
 
     public void movetoQuadrant(RobotController rc) throws GameActionException {
-        // in index 63, we saved our hq count in the tens digit and our target quadrant
         // count in the ones digit
         int quadIndex = rc.readSharedArray(hq_section_index);
-        int hq = Integer.parseInt(Integer.toString(quadIndex).substring(0, 1));
         int targetQuadrants = Integer.parseInt(Integer.toString(quadIndex).substring(1, 2));
         int index = rc.getID() % targetQuadrants;
-        int quadrant = rc.readSharedArray(hq_section_index + 1 + hq * 2 + index);
-        // System.out.println("MOVING TO QUADRANT: " + quadrant);
+        int quadrant = rc.readSharedArray(quad_section + index);
+        rc.setIndicatorString("Moving to quadrant: " + quadrant);
         targetQuadrant(rc, quadrant);
     }
 
@@ -48,7 +38,7 @@ public class Launcher extends Base {
         int i = 0;
         MapLocation toAttack = null;
         while (i < enemies.length && enemies[i].getType() == RobotType.HEADQUARTERS) {
-            i++;
+            i++; 
         }
 
         if (i >= enemies.length) {

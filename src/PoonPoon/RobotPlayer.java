@@ -13,7 +13,13 @@ import java.util.Set;
  * we'll call once your robot
  * is created!
  */
+
+
 public strictfp class RobotPlayer {
+    static Headquarters hq = new Headquarters();
+    static Carriers cr = new Carriers();
+    static Launcher launcher = new Launcher();
+
 
     /**
      * We will use this variable to count the number of turns this robot has been
