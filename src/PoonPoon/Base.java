@@ -10,25 +10,30 @@ public abstract class Base {
     final int quad2 = 1;
     final int quad3 = 5;
     final int quad4 = 3;
-    int hq_section_index = 0;
-    int quad_section = 9;
-    int resource_section = 12;
-    int adamantiumIndex = resource_section;
-    int manaIndex = resource_section + 1;
-    int elixirIndex = resource_section + 2;
-    int attack_location_section = 15;
-    int well_section = 23;
+    final int initialRobotCount = 7;
+    int hqSectionIndex = 0;
+    int quadSection = 9;
+    int resourceSection = 12;
+    int adamantiumIndex = resourceSection;
+    int manaIndex = resourceSection + 1;
+    int elixirIndex = resourceSection + 2;
+
+    int hqSectionIncrement = 2;
+    int wellSectionIncrement = 3;
+    int attack_section_increment = 2;
+    int attackLocationSection = 15;
+    int wellSection = 23;
+    int adamantiumWellSection = wellSection + wellSectionIncrement * 4;
+    int manaWellSection = adamantiumWellSection + wellSectionIncrement * 4;
+    int elixirWellSection = manaWellSection + wellSectionIncrement * 4;
     int arrayLength = 63;
 
-    int hq_section_increment = 2;
-    int well_section_increment = 3;
-    int attack_section_increment = 2;
-
-    int adamantiumID = 1;
-    int manaID = 2;
-    int elixirID = 3;
+    int adamantiumID = 101;
+    int manaID = 102;
+    int elixirID = 103;
 
     int carrier_inventory = 40;
+    int maxRobotCount;
 
     int quadRadiusFraction = 3 / 16;
     static final Random rng = new Random(6147);
@@ -171,7 +176,6 @@ public abstract class Base {
     }
 
     public void targetQuadrant(RobotController rc, int quadrant) throws GameActionException {
-
         MapLocation location = null;
         switch (quadrant) {
             case quad1:
@@ -187,7 +191,6 @@ public abstract class Base {
             case quad4:
                 location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4, rc.getMapHeight() / 4);
                 break;
-
         }
 
         Direction dir = null;
@@ -211,9 +214,20 @@ public abstract class Base {
         return startIndex;
     }
 
-    public RobotInfo[] scanForRobots(RobotController rc) throws GameActionException {
-        Team opponent = rc.getTeam().opponent();
-        return rc.senseNearbyRobots(-1, opponent);
+    public RobotInfo[] scanForRobots(RobotController rc, String status) throws GameActionException {
+        Team team = null;
+        switch (status) {
+            case "enemy":
+                team = rc.getTeam().opponent();
+                break;
+            case "ally":
+                team = rc.getTeam();
+                break;
+            default:
+                team = rc.getTeam();
+                break;
+        }
+        return rc.senseNearbyRobots(-1, team);
     }
 
     public void moveToLocation(RobotController rc, MapLocation to) throws GameActionException {
@@ -239,5 +253,69 @@ public abstract class Base {
                 break;
         }
         return id;
+    }
+
+    public void attackEnemy(RobotController rc) throws GameActionException {
+        RobotInfo[] enemies = scanForRobots(rc, "enemy");
+        if (enemies.length > 0) {
+            MapLocation targetLocation = enemies[0].location;
+            for (RobotInfo enemy : enemies) {
+                if (enemy.getType() != RobotType.HEADQUARTERS && rc.canAttack(enemy.getLocation())) {
+                    // this means we detected an enemy unit besides their hq within attack range
+                    targetLocation = enemy.location;
+                    rc.setIndicatorString("ENEMY FOUND AT: " + targetLocation);
+                    rc.attack(targetLocation);
+                }
+            }
+            chaseOrRetreat(rc, targetLocation);
+        }
+    }
+
+    public MapLocation returnToHQ(RobotController rc) throws GameActionException {
+        MapLocation current_location = rc.getLocation();
+        int distance = rc.getMapHeight();
+        int index = hqSectionIndex + 1;
+        int closest_hq_index = index;
+        while (rc.readSharedArray(index) != 0) {
+            MapLocation location = new MapLocation(rc.readSharedArray(index), rc.readSharedArray(index + 1));
+            int new_distance = current_location.distanceSquaredTo(location);
+            if (new_distance < distance) {
+                distance = new_distance;
+                closest_hq_index = index;
+            }
+            index = index + hqSectionIncrement;
+        }
+        MapLocation hqLocation = new MapLocation(rc.readSharedArray(closest_hq_index),
+                rc.readSharedArray(closest_hq_index + 1));
+        moveToLocation(rc, hqLocation);
+        rc.setIndicatorString("Returning to HQ at: " + hqLocation);
+        return hqLocation;
+    }
+
+    public void chaseOrRetreat(RobotController rc, MapLocation targetLocation) throws GameActionException {
+        // if robot is a launcher, perform chase or retreat manuever, move randomly if
+        // they cannot move in that direction, avoid currents
+        // if robot is a carrier, perform retreat maneuver
+        RobotInfo[] allies = scanForRobots(rc, "ally");
+        RobotInfo[] enemies = scanForRobots(rc, "enemy");
+
+        if (allies.length > enemies.length && rc.getType() == RobotType.LAUNCHER) {
+            Direction dir = rc.getLocation().directionTo(targetLocation);
+            if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
+                rc.move(dir);
+            } else {
+                dir = getRandDirection(rc);
+                if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
+                    rc.move(dir);
+                    rc.setIndicatorString("CHASING");
+                }
+            }
+        } else {
+            returnToHQ(rc);
+        }
+    }
+
+    public int getMaxRobotCount(RobotController rc) {
+        return rc.getMapHeight() * rc.getMapWidth() / 4;
     }
 }

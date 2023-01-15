@@ -4,16 +4,14 @@ import java.util.ArrayList;
 import battlecode.common.*;
 
 public class Headquarters extends Base {
-    // int starting_x_coord = -1;
-    // int starting_y_coord = -1;
-    MapLocation initial_build_location;
-    MapLocation build_location;
-    Direction build_Direction;
+    MapLocation initialBuildLocation;
+    MapLocation buildLocation;
+    Direction buildDirection;
     int robotCount = 0;
     WellInfo[] wellInfo = null;
 
     public void run(RobotController rc) throws GameActionException {
-        if (rc.readSharedArray(hq_section_index) == 0) {
+        if (rc.readSharedArray(hqSectionIndex) == 0) {
             robotCount = rc.getRobotCount();
             uploadCoord(rc);
             uploadQuadrant(rc);
@@ -22,25 +20,30 @@ public class Headquarters extends Base {
 
         // Pick a direction to build in. Dependent on location of HQ. We split the map
         // into quadrants. Build units towards the middle of the map or towards wells.
+        // limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        if (rc.readSharedArray(hq_section_index) != 0) {
+        if (rc.readSharedArray(hqSectionIndex) != 0 && rc.getRobotCount() < getMaxRobotCount(rc)) {
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
+
+            int quadIndex = rc.readSharedArray(hqSectionIndex);
+            int hqCount = Integer.parseInt(Integer.toString(quadIndex).substring(0, 1));
+            if (rc.getRobotCount() > initialRobotCount * hqCount) {
+                buildRobot(rc, RobotType.AMPLIFIER);
+            }
         }
 
         uploadResources(rc);
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
-        if (wellInfo.length > 2) {
+        if (wellInfo.length > 0) {
             MapLocation wellLocation = wellInfo[0].getMapLocation();
-            build_Direction = rc.getLocation().directionTo(wellLocation);
-            initial_build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
+            buildDirection = rc.getLocation().directionTo(wellLocation);
+            initialBuildLocation = rc.getLocation().add(buildDirection).add(buildDirection).add(buildDirection);
         } else {
-            // starting_x_coord = rc.getLocation().x;
-            // starting_y_coord = rc.getLocation().y;
-            build_Direction = initialBuildDirection(rc);
-            initial_build_location = rc.getLocation().add(build_Direction).add(build_Direction).add(build_Direction);
+            buildDirection = initialBuildDirection(rc);
+            initialBuildLocation = rc.getLocation().add(buildDirection).add(buildDirection).add(buildDirection);
         }
     }
 
@@ -58,16 +61,16 @@ public class Headquarters extends Base {
                 && robotType.buildCostMana <= rc.getResourceAmount(ResourceType.MANA)
                 && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
                 && !rc.canActLocation(location)) {
-            location = location.subtract(build_Direction);
+            location = location.subtract(buildDirection);
         }
         return location;
     }
 
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException {
-        build_location = adjustBuildLocation(rc, RobotType.CARRIER, initial_build_location);
-        if (rc.canBuildRobot(robotType, build_location)) {
-            if (rc.canBuildRobot(robotType, build_location)) {
-                rc.buildRobot(robotType, build_location);
+        buildLocation = adjustBuildLocation(rc, RobotType.CARRIER, initialBuildLocation);
+        if (rc.canBuildRobot(robotType, buildLocation)) {
+            if (rc.canBuildRobot(robotType, buildLocation)) {
+                rc.buildRobot(robotType, buildLocation);
             }
         }
     }
@@ -79,19 +82,19 @@ public class Headquarters extends Base {
     }
 
     public void uploadCoord(RobotController rc) throws GameActionException {
-        int index = hq_section_index + 1;
-        int hq_section = robotCount * 2 + 1;
-        while (index < hq_section && rc.readSharedArray(index) != 0) {
+        int index = hqSectionIndex + 1;
+        int hqSection = robotCount * 2 + 1;
+        while (index < hqSection && rc.readSharedArray(index) != 0) {
             index = index + 2;
         }
-        if (rc.canWriteSharedArray(index, 0) && rc.canWriteSharedArray(index + 1, 0) && index < hq_section) {
+        if (rc.canWriteSharedArray(index, 0) && rc.canWriteSharedArray(index + 1, 0) && index < hqSection) {
             rc.writeSharedArray(index, rc.getLocation().x);
             rc.writeSharedArray(index + 1, rc.getLocation().y);
         }
     }
 
     public void uploadQuadrant(RobotController rc) throws GameActionException {
-        int startIndex = quad_section;
+        int startIndex = quadSection;
         int quadSectionEnd = startIndex + robotCount;
         int index = startIndex;
         while (index < quadSectionEnd && rc.readSharedArray(index) != 0) {
@@ -120,21 +123,21 @@ public class Headquarters extends Base {
                 rc.writeSharedArray(index, i);
                 index++;
             }
-            writeToCommsArray(rc, hq_section_index, rc.getRobotCount() * 10 + list.size()); 
+            writeToCommsArray(rc, hqSectionIndex, rc.getRobotCount() * 10 + list.size()); 
         }
     }
      
     public void uploadWellCoord(RobotController rc, WellInfo[] info) throws GameActionException{
         if (info.length != 0) {
-            MapLocation well_location = info[0].getMapLocation();
-            int index = well_section;
+            MapLocation wellLocation = info[0].getMapLocation();
+            int index = wellSection;
             while (rc.readSharedArray(index) != 0) {
-                index = index + well_section_increment;
+                index = index + wellSectionIncrement;
             }
             int resource = convertResourcetoInt(info[0].getResourceType());
             writeToCommsArray(rc, index, resource);
-            writeToCommsArray(rc, index + 1, well_location.x);
-            writeToCommsArray(rc, index + 2 , well_location.y);
+            writeToCommsArray(rc, index + 1, wellLocation.x);
+            writeToCommsArray(rc, index + 2 , wellLocation.y);
             System.out.println("HERE1111111111 at index " + index + ": " + rc.readSharedArray(index) + ", " + rc.readSharedArray(index + 1) + ", " + rc.readSharedArray(index + 2));
         }
     }
