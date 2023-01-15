@@ -81,7 +81,6 @@ public class Headquarters extends Base {
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException {
         if (rc.canBuildRobot(robotType, build_location)) {
             // Let's try to build a robot.
-            System.out.println("Trying to build a " + robotType);
             if (rc.canBuildRobot(robotType, build_location)) {
                 rc.buildRobot(robotType, build_location);
             }

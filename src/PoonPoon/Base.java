@@ -123,14 +123,9 @@ public abstract class Base {
      * getExploreDirection() gives a direction that tries to point away from
      * other robots on your team.
      */
-    public static Direction getExploreDirection(RobotController rc) {
+    public static Direction getExploreDirection(RobotController rc) throws GameActionException {
         // find nearby robots
-        RobotInfo[] nearbyRobots;
-        try {
-            nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
-        } catch (GameActionException e) {
-            return getRandDirection(rc);
-        }
+        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
 
         // figure out "outermost" direction
         // avg all the locations of the nearby robots
