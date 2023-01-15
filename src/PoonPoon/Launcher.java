@@ -9,7 +9,7 @@ public class Launcher extends Base {
     Direction dir;
     int HQ_ID;
 
-    public void runLauncher(RobotController rc) throws GameActionException {
+    public void run(RobotController rc) throws GameActionException {
         // scan for enemies
         // scan for enemies
         int radius = rc.getType().actionRadiusSquared;
@@ -20,28 +20,30 @@ public class Launcher extends Base {
 
         // attack the first detected enemy unit that isn't the hq
         if (enemies.length > 0) {
-                attackEnemy(rc, enemies);
-                attackEnemy(rc, enemies);
+            attackEnemy(rc, enemies);
+            attackEnemy(rc, enemies);
         }
-        // move towards other quadrants when no nearby enemies are present. Once near the center of the quadrants, launchers will roam around.
-        if (enemies.length <= 0) {            
-            movetoQuadrant(rc);   
+        // move towards other quadrants when no nearby enemies are present. Once near
+        // the center of the quadrants, launchers will roam around.
+        if (enemies.length <= 0) {
+            movetoQuadrant(rc);
         }
 
     }
 
-    public void movetoQuadrant (RobotController rc) throws GameActionException{
-        // in index 63, we saved our hq count in the tens digit and our target quadrant count in the ones digit
-        int quadIndex = rc.readSharedArray(hq_section_index);   
+    public void movetoQuadrant(RobotController rc) throws GameActionException {
+        // in index 63, we saved our hq count in the tens digit and our target quadrant
+        // count in the ones digit
+        int quadIndex = rc.readSharedArray(hq_section_index);
         int hq = Integer.parseInt(Integer.toString(quadIndex).substring(0, 1));
         int targetQuadrants = Integer.parseInt(Integer.toString(quadIndex).substring(1, 2));
         int index = rc.getID() % targetQuadrants;
-        int quadrant = rc.readSharedArray(hq_section_index + 1 + hq*2 + index);
+        int quadrant = rc.readSharedArray(hq_section_index + 1 + hq * 2 + index);
         // System.out.println("MOVING TO QUADRANT: " + quadrant);
         targetQuadrant(rc, quadrant);
     }
 
-    public void attackEnemy (RobotController rc, RobotInfo[] enemies) throws GameActionException {
+    public void attackEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException {
         // unit will search for a robot type that isn't headquarters
         int i = 0;
         MapLocation toAttack = null;
@@ -58,19 +60,19 @@ public class Launcher extends Base {
         }
 
         if (rc.canAttack(toAttack)) {
-            rc.setIndicatorString("Attacking");        
+            rc.setIndicatorString("Attacking");
             rc.attack(toAttack);
             rc.setIndicatorString("ATTACKING LOCATION: " + toAttack);
         }
-        //chase enemy target, move randomly if they cannot move in that direction, avoid currents
+        // chase enemy target, move randomly if they cannot move in that direction,
+        // avoid currents
         dir = rc.getLocation().directionTo(enemies[0].location);
-        if(rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
+        if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
             rc.move(dir);
-        }
-        else {
+        } else {
             dir = directions[rng.nextInt(directions.length)];
             if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
-            rc.move(dir);
+                rc.move(dir);
             }
         }
     }
