@@ -2,7 +2,6 @@ package PoonPoon;
 import battlecode.common.*;
 
 public class Amplifier extends Base {
-
     static int mapIndex = 0;
     public void runAmplifier(RobotController rc) throws GameActionException {
         //Write to array the location, type, upgrade status of well

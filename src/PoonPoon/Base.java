@@ -10,7 +10,9 @@ public class Base {
     final int quad2 = 1;
     final int quad3 = 5;
     final int quad4 = 3;
-    int HQ_count_index = 63;
+    int hq_section_index = 0;
+    int arrayLength = 63;
+    int quadRadiusFraction = 3/16;
     static final Random rng = new Random(6147);
     static final Direction[] directions = {
             Direction.NORTH,
@@ -176,7 +178,7 @@ public class Base {
         }
 
         Direction dir = null;
-        if (rc.getLocation().distanceSquaredTo(location) >= 16) {
+        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
             dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -187,5 +189,10 @@ public class Base {
                 rc.move(dir);
             }
         }
+    }
+
+    public int iterateArray(RobotController rc, int startIndex, int loopCount, int increment) throws GameActionException{
+        startIndex += loopCount * increment;
+        return startIndex;
     }
 }

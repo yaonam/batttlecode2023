@@ -24,7 +24,7 @@ public strictfp class RobotPlayer {
      * your robots.
      */
     static int turnCount = 0;
-
+    
     /**
      * A random number generator.
      * We will use this RNG to make some random moves. The Random class is provided

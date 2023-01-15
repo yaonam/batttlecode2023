@@ -8,11 +8,15 @@ public class Headquarters extends Base{
     MapLocation initial_build_location;
     MapLocation build_location;
     Direction build_Direction;
+    int robotCount = 0;
 
     public void runHeadquarters(RobotController rc) throws GameActionException {
        //upload HQ quadrants if not uploaded
-        if (rc.readSharedArray(63) == 0) {
-            uploadQuadrants(rc);
+        if (rc.readSharedArray(hq_section_index) == 0) {
+            robotCount = rc.getRobotCount();
+            uploadCoord(rc);
+            uploadQuadrant(rc);
+            // uploadQuadrants(rc);
         }
         
         // Pick a direction to build in. Dependent on location of HQ. We split the map into quadrants. Build units towards the middle of the map. We can also set HQ to build carriers 
@@ -20,7 +24,7 @@ public class Headquarters extends Base{
         WellInfo[] wellInfo = rc.senseNearbyWells();
         setInitialBuildLocation(rc, wellInfo);
         
-        if (rc.readSharedArray(HQ_count_index) != 0) {
+        if (rc.readSharedArray(hq_section_index) != 0) {
         // if (rc.canBuildAnchor(Anchor.STANDARD)) {
         //     // If we can build an anchor do it!
         //     rc.buildAnchor(Anchor.STANDARD);
@@ -85,44 +89,60 @@ public class Headquarters extends Base{
         }
     }
 
-    public void uploadQuadrants (RobotController rc) throws GameActionException{
-        //find how many HQ we have. Then have them upload their Quadrant locations. Then a final integer of all unique quadrants added up. Attack units will move away from that quadrant.
-        int hq = rc.getRobotCount();
-        int index = HQ_count_index - hq;
-        while (index < HQ_count_index && rc.readSharedArray(index) != 0) {
+    public void uploadCoord (RobotController rc) throws GameActionException{
+        //we have them upload their coordinates
+        int index = hq_section_index + 1;
+        int hq_section = robotCount*2 + 1;
+        while (index < hq_section && rc.readSharedArray(index) != 0) {
+            index = index + 2;
+        }
+        if (rc.canWriteSharedArray(index, 0) && rc.canWriteSharedArray(index+1, 0) && index < hq_section) {
+            rc.writeSharedArray(index, rc.getLocation().x);
+            rc.writeSharedArray(index+1, rc.getLocation().y);
+            // System.out.println("the location at index: " + index + " is: " + rc.readSharedArray(index) + ", " + rc.readSharedArray(index+1));
+        }   
+    }
+
+    public void uploadQuadrant (RobotController rc) throws GameActionException{
+        //find how many HQ we have. Then have them upload their Quadrant locations. 
+        int startIndex = robotCount*2 + 1;
+        int quadSectionEnd = startIndex + robotCount;
+        int index = startIndex;
+        while (index < quadSectionEnd && rc.readSharedArray(index) != 0) {
             index++;
         }
-        if (rc.canWriteSharedArray(index, 0) && index < HQ_count_index) {
+        //WE ARE PRINTING OUR OCCUPIED QUADRANTS 5 3 before our target quadrants, not needed to know our quadrants. Can be overwritten with unoccupied quadrants
+        if (rc.canWriteSharedArray(index, 0) && index < quadSectionEnd) {
             int quadrant = initialMapQuadrant(rc);
             rc.writeSharedArray(index, quadrant);
-            
-            System.out.println("the quadrant at index: " + index + " is: " + rc.readSharedArray(index));
+            // System.out.println("the quadrant at index: " + index + " is: " + rc.readSharedArray(index));
         }
-        if (index == HQ_count_index && rc.canWriteSharedArray(index, 0)) {
-            rc.writeSharedArray(index, hq);
+        if (index == quadSectionEnd && rc.canWriteSharedArray(index, 0)) {
             ArrayList<Integer> list = new ArrayList<Integer>();
-
             list.add(quad1);
             list.add(quad2);
             list.add(quad3);
-            list.add(quad4);
-
-            index = HQ_count_index - hq;
-            
-            for (int i = index; i < HQ_count_index; i++) {
+            list.add(quad4);            
+            for (int i = startIndex; i < quadSectionEnd; i++) {
                 if (list.contains(rc.readSharedArray(i))) {
                     list.remove(Integer.valueOf(rc.readSharedArray(i)));
-                    System.out.println(rc.readSharedArray(i) + "at: " + i);
+                    // System.out.println(rc.readSharedArray(i) + " at index: " + i);
                 }
             }
             
-            int quadSection = HQ_count_index - hq - list.size();
+            System.out.println("here is the list of target quadrants:" + list);
+            index = startIndex;
             for (int i : list) {
-                rc.writeSharedArray(quadSection, i);
-                System.out.println("THIS IS A TARGET QUADRANT: " + rc.readSharedArray(quadSection) + " placed in: " + quadSection);
-                quadSection++;
+                rc.writeSharedArray(index, i);
+                // System.out.println("THIS IS A TARGET QUADRANT: " + rc.readSharedArray(index) + " placed in: " + index);
+                index++;
             }
-            writeToCommsArray(rc, HQ_count_index, rc.getRobotCount()*10+list.size()); //we list the number of HQ so future units know where to start reading HQ quadrants
+            //THIS NEEDS TO UPDATE, WE ARE PRINTING 7 1 5 3 SINCE WE OCCUPY QUADRANTS 5 3 AND ARE TARGETING 7 1
+            writeToCommsArray(rc, hq_section_index, rc.getRobotCount()*10+list.size()); //we list the number of HQ so future units know where to start reading HQ quadrants
+            System.out.println("DONE1111111111111 WE ARE PRINTING THE COMMS ARRAY HERE:");
+            for (int i = 0; i < 15; i++) {
+                System.out.println(rc.readSharedArray(i));
+            }
         }
     }
 }
