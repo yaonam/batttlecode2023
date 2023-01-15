@@ -130,38 +130,5 @@ public strictfp class RobotPlayer {
         // imminent...
     }
 
-    /**
-     * Run a single turn for a Headquarters.
-     * This code is wrapped inside the infinite loop in run(), so it is called once
-     * per turn.
-     */
-    static void runHeadquarters(RobotController rc) throws GameActionException {
-        Headquarters hq = new Headquarters();
-        hq.run(rc);
-    }
-
-    /**
-     * Run a single turn for a Carrier.
-     * This code is wrapped inside the infinite loop in run(), so it is called once
-     * per turn.
-     */
-    static void runCarrier(RobotController rc) throws GameActionException {
-        Carriers cr = new Carriers();
-        cr.run(rc);
-    }
-
-    /**
-     * Run a single turn for a Launcher.
-     * This code is wrapped inside the infinite loop in run(), so it is called once
-     * per turn.
-     */
-    static void runLauncher(RobotController rc) throws GameActionException {
-        Launcher launcher = new Launcher();
-        launcher.run(rc);
-    }
-
-    static void runAmplifier(RobotController rc) throws GameActionException {
-        Amplifier amp = new Amplifier();
-        amp.run(rc);
-    }
+    
 }
