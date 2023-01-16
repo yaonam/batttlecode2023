@@ -230,8 +230,14 @@ public abstract class Base {
         return rc.senseNearbyRobots(-1, team);
     }
 
-    public void moveToLocation(RobotController rc, MapLocation to) throws GameActionException {
+    public void tryMoveTo(RobotController rc, MapLocation to) throws GameActionException {
         Direction dir = getDirectionsTo(rc, to);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        }
+    }
+
+    public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
@@ -287,7 +293,7 @@ public abstract class Base {
         }
         MapLocation hqLocation = new MapLocation(rc.readSharedArray(closest_hq_index),
                 rc.readSharedArray(closest_hq_index + 1));
-        moveToLocation(rc, hqLocation);
+        tryMoveTo(rc, hqLocation);
         rc.setIndicatorString("Returning to HQ at: " + hqLocation);
         return hqLocation;
     }
@@ -317,5 +323,35 @@ public abstract class Base {
 
     public int getMaxRobotCount(RobotController rc) {
         return rc.getMapHeight() * rc.getMapWidth() / 4;
+    }
+
+    /**
+     * Finds the first, closest MapLocation from the input array.
+     * If empty, will return null.
+     */
+    public MapLocation findNearest(RobotController rc, MapLocation[] mapLocs) {
+        MapLocation myLoc = rc.getLocation();
+        MapLocation closestLoc = null;
+        int closestDist = 0;
+        for (MapLocation mapLoc : mapLocs) {
+            int distTo = myLoc.distanceSquaredTo(mapLoc);
+            if (closestDist == 0 || distTo < closestDist) {
+                closestLoc = mapLoc;
+                closestDist = distTo;
+            }
+        }
+        return closestLoc;
+    }
+
+    /**
+     * Finds the first, nearest well.
+     * Returns null if none.
+     */
+    public MapLocation findNearestWell(RobotController rc) {
+        WellInfo[] wells = rc.senseNearbyWells();
+        MapLocation[] wellLocs = new MapLocation[wells.length];
+        for (int i = 0; i < wells.length; i++)
+            wellLocs[i] = wells[i].getMapLocation();
+        return findNearest(rc, wellLocs);
     }
 }

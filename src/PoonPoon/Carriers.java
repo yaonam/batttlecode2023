@@ -6,28 +6,56 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 public class Carriers extends Base {
+    MapLocation hqLoc = null;
+
     public void run(RobotController rc) throws GameActionException {
-        collectResourceOrReturnToHQ(rc);
-        // If carriers are carrying near max weight and are about to die, perform a
-        // carrier attack
-        attackEnemy(rc);
+        // TODO: remove this and use comm array
+        if (hqLoc == null)
+            hqLoc = rc.getLocation();
 
-        // If we can see a well, move towards it
-        WellInfo[] wells = rc.senseNearbyWells();
-        if (wells.length > 0) {
-            moveToLocation(rc, wells[0].getMapLocation());
-            rc.setIndicatorString("Moving to well at: " + wells[0].getMapLocation());
+        // if near enemy, evade
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (nearbyEnemies.length > 0) {
+            // TODO: attack if non-zero weight? otherwise run?
+            MapLocation[] nearbyEnemyLocs = new MapLocation[nearbyEnemies.length];
+            for (int i = 0; i < nearbyEnemies.length; i++)
+                nearbyEnemyLocs[i] = nearbyEnemies[i].location;
+            MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
+            rc.setIndicatorString("Evading enemy!");
+            tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
         }
-
-        // Direction nearestHq = getNearestHqLoc();
-
-        // If nothing else, explore
-        Direction dir = getExploreDirection(rc);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
+        // if not full capacity then go explore/collect
+        else if (rc.getWeight() < GameConstants.CARRIER_CAPACITY) {
+            MapLocation nearestWell = findNearestWell(rc);
+            // findClosest(rc, wells)
+            if (nearestWell != null) {
+                // go to/collect
+                rc.setIndicatorString("Collecting at " + nearestWell);
+                collectOrMoveToWell(rc, nearestWell);
+            } else {
+                // explore
+                rc.setIndicatorString("Exploring!");
+                tryMoveTo(rc, getExploreDirection(rc));
+            }
         }
-        // moveToLocation(rc, rng.nextInt(rc.getMapHeight()),
-        // rng.nextInt(rc.getMapHeight()));
+        // if full capacity, then return to hq/deposit
+        else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
+            // return to hq
+            rc.setIndicatorString("Returning to HQ!");
+            tryMoveTo(rc, hqLoc);
+        }
+    }
+
+    /**
+     * Tries to collect resource from well.
+     * If can't, then tries to move towards well.
+     */
+    public void collectOrMoveToWell(RobotController rc, MapLocation wellLoc) throws GameActionException {
+        if (rc.canCollectResource(wellLoc, -1)) {
+            rc.collectResource(wellLoc, -1);
+        } else {
+            tryMoveTo(rc, wellLoc);
+        }
     }
 
     public void collectResourceOrReturnToHQ(RobotController rc) throws GameActionException {
