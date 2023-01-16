@@ -25,20 +25,6 @@ public strictfp class RobotPlayer {
     static int turnCount = 0;
     static int wellCoord = 0;
     static int closestTargetCoord = 0;
-
-    static final Random rng = new Random(6147);
-
-    static final Direction[] directions = {
-            Direction.NORTH,
-            Direction.NORTHEAST,
-            Direction.EAST,
-            Direction.SOUTHEAST,
-            Direction.SOUTH,
-            Direction.SOUTHWEST,
-            Direction.WEST,
-            Direction.NORTHWEST,
-    };
-
     /**
      * run() is the method that is called when a robot is instantiated in the
      * Battlecode world.

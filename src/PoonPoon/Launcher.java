@@ -13,18 +13,20 @@ public class Launcher extends Base {
         // move towards other quadrants when no nearby enemies are present. Once near
         // the center of the quadrants, launchers will roam around.
         if (enemies.length <= 0) {
-            movetoQuadrant(rc);
+            launcherMovement(rc);
             attackEnemy(rc);
         }
-        // rc.setIndicatorString("End of loop");
     }
 
-    public void movetoQuadrant(RobotController rc) throws GameActionException {
-        // count in the ones digit
-        int targetQuadrants = rc.readSharedArray(0) % 10 ;
-        int index = rc.getID() % targetQuadrants;
-        int quadrant = rc.readSharedArray(quadSection + index);
-        rc.setIndicatorString("Moving to quadrant: " + quadrant);
-        targetQuadrant(rc, quadrant);
+    public void reinforceAllies(RobotController rc) {
+        // find a nearby launcher
+        // if launcher cooldown is greater than ten, move towards that launcher
+        // if (rc.senseRobot(1).getType().actionCooldown > 10) {}
+    }
+
+    public void launcherMovement(RobotController rc) throws GameActionException{
+        // this handles all launcher movements
+        reinforceAllies(rc);
+        occupyNewQuadrant(rc);
     }
 }

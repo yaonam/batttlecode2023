@@ -38,10 +38,6 @@ public class Carriers extends Base {
         }
         // if full capacity, then return to hq/deposit
         else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
-            // return to hq
-            // hqLoc = findNearest(rc, findArrayOfLocations(rc, hqSection, quadSection));
-            // rc.setIndicatorString("Returning to HQ at location: " + hqLoc);
-            // tryMoveTo(rc, hqLoc);
             MapLocation hqLocation = returnToHQ(rc);
             transferResources(rc, hqLocation);
         }

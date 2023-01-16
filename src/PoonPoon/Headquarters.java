@@ -17,9 +17,9 @@ public class Headquarters extends Base {
             uploadQuadrant(rc);
             uploadWellCoord(rc, rc.senseNearbyWells());
 
-            // for (int i = 0; i < resourceSection; i++) {
-            //     System.out.println(rc.readSharedArray(i));
-            // }
+            for (int i = 0; i < resourceSection; i++) {
+                System.out.println(rc.readSharedArray(i));
+            }
         }
 
         // Pick a direction to build in. Dependent on location of HQ. We split the map
@@ -31,7 +31,6 @@ public class Headquarters extends Base {
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
         }
-
         uploadResourceAmount(rc);
     }
 
@@ -41,14 +40,9 @@ public class Headquarters extends Base {
             buildDirection = rc.getLocation().directionTo(wellLocation);
             initialBuildLocation = rc.getLocation().add(buildDirection).add(buildDirection).add(buildDirection);
         } else {
-            buildDirection = initialBuildDirection(rc);
-            initialBuildLocation = rc.getLocation().add(buildDirection).add(buildDirection).add(buildDirection);
+            buildDirection = rc.getLocation().directionTo(new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+            initialBuildLocation = rc.getLocation().add(buildDirection).add(buildDirection).add(buildDirection);     
         }
-    }
-
-    public Direction initialBuildDirection(RobotController rc) {
-        int quadrant = initialMapQuadrant(rc);
-        return initialDirection(rc, quadrant);
     }
 
     // The extra conditions prevent the method from changing the location due to a
@@ -61,13 +55,12 @@ public class Headquarters extends Base {
                 && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
                 && !rc.canActLocation(location)) {
             location = location.subtract(buildDirection);
-        }
+        }            
         return location;
     }
 
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException {
-        buildLocation = adjustBuildLocation(rc, RobotType.CARRIER, initialBuildLocation);
-        
+        buildLocation = adjustBuildLocation(rc, robotType, initialBuildLocation);
         if (rc.canBuildRobot(robotType, buildLocation)) {
             if (robotType == RobotType.AMPLIFIER && rc.getRobotCount() > initialRobotCount * rc.readSharedArray(hqSection)/10) {
                 rc.buildRobot(robotType, buildLocation);
@@ -75,6 +68,7 @@ public class Headquarters extends Base {
             else if (robotType == RobotType.CARRIER || robotType == RobotType.LAUNCHER) {
                 rc.buildRobot(robotType, buildLocation);
             }
+            subtractResourceAmount(rc, robotType);
         }
     }
 
@@ -84,10 +78,8 @@ public class Headquarters extends Base {
             index++;
         }
         if (rc.canWriteSharedArray(index, 0) && index < quadSection) {
-            // rc.writeSharedArray(index, rc.getLocation().x);
-            // rc.writeSharedArray(index + 1, rc.getLocation().y);
+            rc.setIndicatorString("UPLOADING COORD: " + coordIntToLocation(rc.readSharedArray(index)));
             rc.writeSharedArray(index, locationToCoordInt(rc.getLocation()));
-            rc.setIndicatorString("" + coordIntToLocation(rc.readSharedArray(index)));
         }
     }
 
@@ -98,8 +90,7 @@ public class Headquarters extends Base {
         while (index < quadSectionEnd && rc.readSharedArray(index) != 0) {
             index++;
         }
-        // WE ARE PRINTING OUR OCCUPIED QUADRANTS 5 3 before our target quadrants, not
-        // needed to know our quadrants. Can be overwritten with unoccupied quadrants
+        // We overwrite our quadrants with unoccupied quadrants
         if (rc.canWriteSharedArray(index, 0) && index < quadSectionEnd) {
             int quadrant = initialMapQuadrant(rc);
             rc.writeSharedArray(index, quadrant);
@@ -117,12 +108,29 @@ public class Headquarters extends Base {
             }
 
             index = startIndex;
+            MapLocation location = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
             for (int i : list) {
-                rc.writeSharedArray(index, i);
+            switch (i) {
+                case quad1:
+                    location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() - rc.getMapHeight() / 4);
+                    break;
+                case quad2:
+                    location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4,
+                            rc.getMapHeight() - rc.getMapHeight() / 4);
+                    break;
+                case quad3:
+                    location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() / 4);
+                    break;
+                case quad4:
+                    location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4, rc.getMapHeight() / 4);
+                    break;
+            }
+                rc.writeSharedArray(index, locationToCoordInt(location));
                 index++;
             }
             writeToCommsArray(rc, 0, rc.getRobotCount() * 10 + list.size()); 
-        }
+        }             rc.setIndicatorString("UPLOADING QUADRANT");
+
     }
      
     public void uploadWellCoord(RobotController rc, WellInfo[] info) throws GameActionException{
@@ -137,15 +145,30 @@ public class Headquarters extends Base {
         }
     }
 
+    /**
+     *  Update the resources section in the comms array every X turns by adding HQ current resources to resources section
+     */
     public void uploadResourceAmount(RobotController rc) throws GameActionException {
-        if (rc.getRoundNum() % 10 == 0 ) {
-            rc.setIndicatorString("UPLOADING TO COMMS ARRAY: " + rc.getResourceAmount(ResourceType.ADAMANTIUM) + "," 
-                + rc.getResourceAmount(ResourceType.MANA) + ", " 
-                + rc.getResourceAmount(ResourceType.MANA));
-            rc.writeSharedArray(adamantiumIndex, rc.getResourceAmount(ResourceType.ADAMANTIUM));
-            rc.writeSharedArray(manaIndex, rc.getResourceAmount(ResourceType.MANA));
-            rc.writeSharedArray(elixirIndex, rc.getResourceAmount(ResourceType.MANA));
+        if (rc.getRoundNum() % 5 == 0 ) {
+            int index = resourceSection - 1;
+            for (ResourceType rType : ResourceType.values()) {
+                rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index + rType.resourceID) + rc.getResourceAmount(rType));
+            }
+            rc.setIndicatorString("CURRENT RESOURCES: " + rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) + ", " + rc.readSharedArray(elixirIndex)); 
         }
+    }
+
+    /**
+     * When building a robot, subtract the cost from the resources section in the comms array only when the amount of resources is greater than 0.
+     */
+    public void subtractResourceAmount(RobotController rc, RobotType robotType) throws GameActionException{
+        if (rc.readSharedArray(adamantiumIndex) > 0 && rc.readSharedArray(manaIndex) > 0) {
+            int index = resourceSection - 1;
+            for (ResourceType rType : ResourceType.values()) {
+                rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index + rType.resourceID) - robotType.getBuildCost(rType));
+            }
+            rc.setIndicatorString("CURRENT RESOURCES: " + rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) + ", " + rc.readSharedArray(elixirIndex)); 
+        }   
     }
 
     public int getMaxRobotCount(RobotController rc) {
