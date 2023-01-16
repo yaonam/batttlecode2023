@@ -3,8 +3,6 @@ package PoonPoon;
 import battlecode.common.*;
 
 public class Carriers extends Base {
-    MapLocation hqLoc = null;
-
     public void run(RobotController rc) throws GameActionException {
         // if near enemy, attack and then evade
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
