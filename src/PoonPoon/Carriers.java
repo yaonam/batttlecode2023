@@ -28,6 +28,15 @@ public class Carriers extends Base {
             }
             // pickup/place anchor
             // TODO: implement anchor stuff
+            else if (rc.canTakeAnchor(nearestHqLoc, Anchor.STANDARD)) {
+                rc.setIndicatorString("Taking anchor!");
+                rc.takeAnchor(nearestHqLoc, Anchor.STANDARD);
+            }
+
+        }
+        if (rc.canPlaceAnchor()) {
+            rc.setIndicatorString("Placing anchor!");
+            rc.placeAnchor();
         }
         // collect resources
         MapLocation nearestWell = findNearestWell(rc);
@@ -51,6 +60,13 @@ public class Carriers extends Base {
             rc.setIndicatorString("Evading enemy!");
             evadeEnemies(rc, nearbyEnemies);
         }
+        // If holding an anchor
+        if (rc.getAnchor() != null) {
+            MapLocation nearestIslandLoc = findNearestIsland(rc);
+            if (nearestIslandLoc != null) {
+                tryMoveTo(rc, nearestIslandLoc);
+            }
+        }
         // explore/return
         if (rc.getWeight() < GameConstants.CARRIER_CAPACITY) {
             MapLocation nearestWell = findNearestWell(rc);
@@ -69,6 +85,19 @@ public class Carriers extends Base {
             rc.setIndicatorString("Returning to hq!");
             returnToHQ(rc);
         }
+    }
+
+    /**
+     * Finds the nearest MapLocation of the first sensed Island.
+     * Returns null if none.
+     */
+    public MapLocation findNearestIsland(RobotController rc) throws GameActionException {
+        int[] nearbyIslands = rc.senseNearbyIslands();
+        if (nearbyIslands.length > 0) {
+            MapLocation[] firstIslandLocs = rc.senseNearbyIslandLocations(nearbyIslands[0]);
+            return findNearest(rc, firstIslandLocs);
+        }
+        return null;
     }
 
     /**
