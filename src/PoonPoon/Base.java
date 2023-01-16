@@ -14,28 +14,26 @@ public abstract class Base {
     int hqSectionIndex = 0;
     int quadSection = 9;
     int resourceSection = 12;
-        int adamantiumIndex = resourceSection;
-        int manaIndex = resourceSection + 1;
-        int elixirIndex = resourceSection + 2;
+    int adamantiumIndex = resourceSection;
+    int manaIndex = resourceSection + 1;
+    int elixirIndex = resourceSection + 2;
 
     int hqSectionIncrement = 2;
     int wellSectionIncrement = 3;
     int attack_section_increment = 2;
     int attackLocationSection = 15;
     int wellSection = 23;
-        int adamantiumWellSection = wellSection + wellSectionIncrement * 4;
-        int manaWellSection = adamantiumWellSection + wellSectionIncrement * 4;
-        int elixirWellSection = manaWellSection + wellSectionIncrement * 4;
+    int adamantiumWellSection = wellSection + wellSectionIncrement * 4;
+    int manaWellSection = adamantiumWellSection + wellSectionIncrement * 4;
+    int elixirWellSection = manaWellSection + wellSectionIncrement * 4;
     int arrayLength = 63;
-
-
 
     int adamantiumID = 101;
     int manaID = 102;
     int elixirID = 103;
 
     int carrier_inventory = 40;
-    int maxRobotCount; 
+    int maxRobotCount;
 
     int quadRadiusFraction = 3 / 16;
     static final Random rng = new Random(6147);
@@ -196,10 +194,11 @@ public abstract class Base {
         }
 
         Direction dir = null;
-        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
+        if (location != null
+                && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
             dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
-                rc.move(dir); 
+                rc.move(dir);
             }
         } else {
             dir = directions[rng.nextInt(directions.length)];
@@ -215,11 +214,11 @@ public abstract class Base {
         return startIndex;
     }
 
-    public RobotInfo[] scanForRobots (RobotController rc, String status) throws GameActionException{
+    public RobotInfo[] scanForRobots(RobotController rc, String status) throws GameActionException {
         Team team = null;
         switch (status) {
             case "enemy":
-            team = rc.getTeam().opponent();
+                team = rc.getTeam().opponent();
                 break;
             case "ally":
                 team = rc.getTeam();
@@ -228,15 +227,17 @@ public abstract class Base {
                 team = rc.getTeam();
                 break;
         }
-        return rc.senseNearbyRobots(-1, team); 
+        return rc.senseNearbyRobots(-1, team);
     }
 
-    public void moveToLocation(RobotController rc, int x, int y) throws GameActionException{
-        // x = rng.nextInt(rc.getMapWidth());
-        // y = rng.nextInt(rc.getMapHeight());
+    public void tryMoveTo(RobotController rc, MapLocation to) throws GameActionException {
+        Direction dir = getDirectionsTo(rc, to);
+        if (rc.canMove(dir)) {
+            rc.move(dir);
+        }
+    }
 
-        MapLocation location= new MapLocation(x, y);
-        Direction dir = getDirectionsTo(rc, location);
+    public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
         if (rc.canMove(dir)) {
             rc.move(dir);
         }
@@ -276,7 +277,7 @@ public abstract class Base {
         }
     }
 
-    public MapLocation returnToHQ(RobotController rc) throws GameActionException{
+    public MapLocation returnToHQ(RobotController rc) throws GameActionException {
         MapLocation current_location = rc.getLocation();
         int distance = rc.getMapHeight();
         int index = hqSectionIndex + 1;
@@ -290,14 +291,16 @@ public abstract class Base {
             }
             index = index + hqSectionIncrement;
         }
-        MapLocation hqLocation = new MapLocation(rc.readSharedArray(closest_hq_index), rc.readSharedArray(closest_hq_index + 1));
-        moveToLocation(rc, hqLocation.x, hqLocation.y);
+        MapLocation hqLocation = new MapLocation(rc.readSharedArray(closest_hq_index),
+                rc.readSharedArray(closest_hq_index + 1));
+        tryMoveTo(rc, hqLocation);
         rc.setIndicatorString("Returning to HQ at: " + hqLocation);
         return hqLocation;
     }
 
-    public void chaseOrRetreat (RobotController rc, MapLocation targetLocation) throws GameActionException {
-        // if robot is a launcher, perform chase or retreat manuever, move randomly if they cannot move in that direction, avoid currents
+    public void chaseOrRetreat(RobotController rc, MapLocation targetLocation) throws GameActionException {
+        // if robot is a launcher, perform chase or retreat manuever, move randomly if
+        // they cannot move in that direction, avoid currents
         // if robot is a carrier, perform retreat maneuver
         RobotInfo[] allies = scanForRobots(rc, "ally");
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
@@ -313,13 +316,42 @@ public abstract class Base {
                     rc.setIndicatorString("CHASING");
                 }
             }
-        }
-        else {
+        } else {
             returnToHQ(rc);
         }
     }
 
     public int getMaxRobotCount(RobotController rc) {
         return rc.getMapHeight() * rc.getMapWidth() / 4;
+    }
+
+    /**
+     * Finds the first, closest MapLocation from the input array.
+     * If empty, will return null.
+     */
+    public MapLocation findNearest(RobotController rc, MapLocation[] mapLocs) {
+        MapLocation myLoc = rc.getLocation();
+        MapLocation closestLoc = null;
+        int closestDist = 0;
+        for (MapLocation mapLoc : mapLocs) {
+            int distTo = myLoc.distanceSquaredTo(mapLoc);
+            if (closestDist == 0 || distTo < closestDist) {
+                closestLoc = mapLoc;
+                closestDist = distTo;
+            }
+        }
+        return closestLoc;
+    }
+
+    /**
+     * Finds the first, nearest well.
+     * Returns null if none.
+     */
+    public MapLocation findNearestWell(RobotController rc) {
+        WellInfo[] wells = rc.senseNearbyWells();
+        MapLocation[] wellLocs = new MapLocation[wells.length];
+        for (int i = 0; i < wells.length; i++)
+            wellLocs[i] = wells[i].getMapLocation();
+        return findNearest(rc, wellLocs);
     }
 }
