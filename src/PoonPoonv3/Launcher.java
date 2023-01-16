@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonv3;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -39,38 +39,40 @@ public class Launcher extends Base {
     }
 
     /**
-     *  Launchers check if there are any carriers carrying anchors, and the number of ally units within vision. 
-     *  If there are carriers with anchors and there are more than X amount of allies nearby, then follow the carrier.
-     *  Otherwise, attempt to defend current anchor islands.
+     * Launchers check if there are any carriers carrying anchors, and the number of
+     * ally units within vision.
+     * If there are carriers with anchors and there are more than X amount of allies
+     * nearby, then follow the carrier.
+     * Otherwise, attempt to defend current anchor islands.
      */
-    public void defendAnchor(RobotController rc) throws GameActionException{
+    public void defendAnchor(RobotController rc) throws GameActionException {
         if (findAnchorCarriers(rc).length > 0 && scanForRobots(rc, "ally").length > 5) {
             tryMoveTo(rc, findNearest(rc, findAnchorCarriers(rc)));
-        }
-        else {
+        } else {
             protectAnchorIsland(rc);
-        }        
+        }
     }
 
-    public void protectAnchorIsland(RobotController rc) throws GameActionException{
+    public void protectAnchorIsland(RobotController rc) throws GameActionException {
         // if the closest, visible island has anchor, move to the island
         MapLocation[] anchorIslands = findAnchorIslands(rc);
         if (anchorIslands.length > 0) {
             MapLocation nearbyAnchorIsland = findNearest(rc, anchorIslands);
-            // when outside of X distance move towards center of nearby anchor island, move randomly when close enough to center
+            // when outside of X distance move towards center of nearby anchor island, move
+            // randomly when close enough to center
             if (rc.getLocation().distanceSquaredTo(nearbyAnchorIsland) >= 16) {
                 tryMoveTo(rc, nearbyAnchorIsland);
-            } 
-            else {
+            } else {
                 tryMoveTo(rc, getRandDirection(rc));
             }
         }
     }
 
     /**
-     *  Returns an array of all locations of nearby anchor islands. The location is the center of the islands.
-     * */
-    public MapLocation[] findAnchorIslands(RobotController rc) throws GameActionException{
+     * Returns an array of all locations of nearby anchor islands. The location is
+     * the center of the islands.
+     */
+    public MapLocation[] findAnchorIslands(RobotController rc) throws GameActionException {
         Set<Integer> nearbyAnchorIslands = new HashSet<Integer>();
         int[] islands = rc.senseNearbyIslands();
         for (int islandId : islands) {
@@ -87,13 +89,12 @@ public class Launcher extends Base {
         return anchorIslands;
     }
 
-    
     public void followAnchorCarrier(RobotController rc, int id) {
-        // follow a visible carrier that is carrying anchor 
+        // follow a visible carrier that is carrying anchor
         // move towards that unit, might need to get their ID
     }
 
-    public MapLocation[] findAnchorCarriers(RobotController rc) throws GameActionException{
+    public MapLocation[] findAnchorCarriers(RobotController rc) throws GameActionException {
         RobotInfo[] robots = scanForRobots(rc, "ally");
         Set<MapLocation> nearbyCarriers = new HashSet<MapLocation>();
 

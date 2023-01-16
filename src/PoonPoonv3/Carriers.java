@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonv3;
 
 import battlecode.common.*;
 
