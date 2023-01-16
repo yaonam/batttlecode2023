@@ -137,25 +137,25 @@ public abstract class Base {
         return getDirectionsTo(rc, thisLoc.add(awayDirection));
     }
 
-    /** 
-     * Move to an unoccupied quadrant if there are enough friendly units nearby. Otherwise, return to hq.
+    /**
+     * Move to an unoccupied quadrant if there are enough friendly units nearby.
+     * Otherwise, return to hq.
      */
     public MapLocation occupyNewQuadrant(RobotController rc) throws GameActionException {
         MapLocation location = null;
         location = findNearest(rc, quadSection, resourceSection);
 
-        //if a certain amount of ally units are nearby, move towards target quadrant
+        // if a certain amount of ally units are nearby, move towards target quadrant
         Direction dir = null;
-        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction && scanForRobots(rc, "ally").length >= 2) {
+        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction
+                && scanForRobots(rc, "ally").length >= 2) {
             dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
                 rc.move(dir);
             }
-        } 
-        else if (scanForRobots(rc, "ally").length < 2) {
+        } else if (scanForRobots(rc, "ally").length < 2) {
             returnToHQ(rc);
-        }
-        else {
+        } else {
             getRandDirection(rc);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -175,7 +175,7 @@ public abstract class Base {
                 team = rc.getTeam();
                 break;
             default:
-                team = rc.getTeam(); 
+                team = rc.getTeam();
                 break;
         }
         return rc.senseNearbyRobots(-1, team);
@@ -194,28 +194,30 @@ public abstract class Base {
         }
     }
 
-    /** Check for nearby enemies and attack the first unit within range. Ignores hq as attack target. 
+    /**
+     * Check for nearby enemies and attack the first unit within range. Ignores hq
+     * as attack target.
      * Then, determine whether to chase or retreat.
-    */
+     */
     public void attackEnemy(RobotController rc) throws GameActionException {
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
         if (enemies.length > 0) {
-            MapLocation targetLocation = enemies[0].location;
-            for (RobotInfo enemy : enemies) {
-                if (enemy.getType() != RobotType.HEADQUARTERS && rc.canAttack(enemy.getLocation())) {
-                    // this means we detected an enemy unit besides their hq within attack range
-                    targetLocation = enemy.location;
-                    rc.setIndicatorString("ENEMY FOUND AT: " + targetLocation);
-                    rc.attack(targetLocation);
-                }
-            }
-            chaseOrEvadeEnemy(rc, targetLocation);
-        } 
+            RobotInfo target = attackNearestEnemy(rc, enemies);
+            chaseOrEvadeEnemy(rc, target.location);
+        }
     }
 
-    /**  robot returns to nearby hq
+    public RobotInfo attackNearestEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException {
+        RobotInfo target = findNearestRobot(rc, enemies);
+        if (target != null && target.getType() != RobotType.HEADQUARTERS && rc.canAttack(target.location))
+            rc.attack(target.location);
+        return target;
+    }
+
+    /**
+     * robot returns to nearby hq
      **/
-    public MapLocation returnToHQ(RobotController rc) throws GameActionException{
+    public MapLocation returnToHQ(RobotController rc) throws GameActionException {
         MapLocation hqLocation = coordIntToLocation(RobotPlayer.closestTargetCoord);
         if (RobotPlayer.closestTargetCoord == 0) {
             hqLocation = findNearest(rc, hqSection, quadSection);
@@ -226,8 +228,11 @@ public abstract class Base {
         return hqLocation;
     }
 
-    /**  If robot is a launcher, and enemy numbers are not greater than ally numbers, chase enemy. 
-     * If robot is not a launcher or enemy numbers are too great, retreat to nearby hq. 
+    /**
+     * If robot is a launcher, and enemy numbers are not greater than ally numbers,
+     * chase enemy.
+     * If robot is not a launcher or enemy numbers are too great, retreat to nearby
+     * hq.
      **/
     public void chaseOrEvadeEnemy(RobotController rc, MapLocation targetLocation) throws GameActionException {
         RobotInfo[] allies = scanForRobots(rc, "ally");
@@ -236,11 +241,12 @@ public abstract class Base {
         if (allies.length > enemies.length && rc.getType() == RobotType.LAUNCHER) {
             chaseEnemy(rc, targetLocation, allies, enemies);
         } else {
-            evadeEnemy(rc, enemies);
+            evadeEnemies(rc, enemies);
         }
     }
 
-    public void chaseEnemy(RobotController rc, MapLocation targetLocation, RobotInfo[] allies, RobotInfo[] enemies) throws GameActionException{
+    public void chaseEnemy(RobotController rc, MapLocation targetLocation, RobotInfo[] allies, RobotInfo[] enemies)
+            throws GameActionException {
         Direction dir = rc.getLocation().directionTo(targetLocation);
         if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
             rc.move(dir);
@@ -253,14 +259,21 @@ public abstract class Base {
         }
     }
 
-    public void evadeEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException{
-        MapLocation[] nearbyEnemyLocs = new MapLocation[enemies.length];
-        if (nearbyEnemyLocs.length > 0) {
-            for (int i = 0; i < enemies.length; i++)
-            nearbyEnemyLocs[i] = enemies[i].location;
-        MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
+    /**
+     * Attempts to move the robot away from the given robot.
+     */
+    public void evadeRobot(RobotController rc, RobotInfo robot) throws GameActionException {
         rc.setIndicatorString("Evading enemy!");
-        tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
+        tryMoveTo(rc, rc.getLocation().directionTo(robot.location).opposite());
+    }
+
+    /**
+     * Attempts to move the robot away from the first, nearest enemy.
+     */
+    public void evadeEnemies(RobotController rc, RobotInfo[] enemies) throws GameActionException {
+        if (enemies.length > 0) {
+            RobotInfo nearestEnemy = findNearestRobot(rc, enemies);
+            evadeRobot(rc, nearestEnemy);
         }
     }
 
@@ -278,7 +291,10 @@ public abstract class Base {
         }
     }
 
-    public MapLocation findNearest(RobotController rc, int startIndex, int endIndex) throws GameActionException{
+    /**
+     * Reads the shared array over the given indices and returns the nearest loc.
+     */
+    public MapLocation findNearest(RobotController rc, int startIndex, int endIndex) throws GameActionException {
         MapLocation currentLocation = rc.getLocation();
         int distance = 3600;
         int newDistance = 3600;
@@ -321,5 +337,23 @@ public abstract class Base {
         for (int i = 0; i < wells.length; i++)
             wellLocs[i] = wells[i].getMapLocation();
         return findNearest(rc, wellLocs);
+    }
+
+    /**
+     * Finds the first, nearest robot.
+     * Returns null if none.
+     */
+    public RobotInfo findNearestRobot(RobotController rc, RobotInfo[] robots) {
+        MapLocation myLoc = rc.getLocation();
+        RobotInfo nearestRobot = null;
+        int nearestDist = 0;
+        for (RobotInfo robot : robots) {
+            int distTo = myLoc.distanceSquaredTo(robot.location);
+            if (nearestDist == 0 || distTo < nearestDist) {
+                nearestRobot = robot;
+                nearestDist = distTo;
+            }
+        }
+        return nearestRobot;
     }
 }
