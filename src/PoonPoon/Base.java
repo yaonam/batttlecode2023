@@ -142,20 +142,13 @@ public abstract class Base {
         location = findNearest(rc, quadSection, resourceSection);
 
         // if a certain amount of ally units are nearby, move towards target quadrant
-        Direction dir = null;
         if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction
                 && scanForRobots(rc, "ally").length >= 2) {
-            dir = getDirectionsTo(rc, location);
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            }
+            tryMoveTo(rc, location);
         } else if (scanForRobots(rc, "ally").length < 2) {
             returnToHQ(rc);
         } else {
-            getRandDirection(rc);
-            if (rc.canMove(dir)) {
-                rc.move(dir);
-            }
+            tryMoveTo(rc, getRandDirection(rc));
         }
         rc.setIndicatorString("Moving to quadrant: " + location);
         return location;
@@ -178,10 +171,7 @@ public abstract class Base {
     }
 
     public void tryMoveTo(RobotController rc, MapLocation to) throws GameActionException {
-        Direction dir = getDirectionsTo(rc, to);
-        if (rc.canMove(dir)) {
-            rc.move(dir);
-        }
+        tryMoveTo(rc, getDirectionsTo(rc, to));
     }
 
     public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
