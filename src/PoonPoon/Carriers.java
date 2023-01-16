@@ -10,12 +10,11 @@ public class Carriers extends Base {
         if (hqLoc == null)
             hqLoc = rc.getLocation();
 
-        // if near enemy, evade
+        // if near enemy, attack and then evade
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (nearbyEnemies.length > 0) {
-            // TODO: attack if non-zero weight? otherwise run?
-            attackNearestEnemy(rc, nearbyEnemies);
-            evadeEnemies(rc, nearbyEnemies);
+            RobotInfo nearestEnemy = attackNearestEnemy(rc, nearbyEnemies);
+            evadeRobot(rc, nearestEnemy);
         }
         // if not full capacity then go explore/collect
         else if (rc.getWeight() < GameConstants.CARRIER_CAPACITY) {
