@@ -30,10 +30,10 @@ public class Headquarters extends Base {
         setInitialBuildLocation(rc, rc.senseNearbyWells());
         if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 4) {
             // buildRobot(rc, RobotType.AMPLIFIER);
-            buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
+            buildRobot(rc, RobotType.LAUNCHER);
         }
-        if (rc.getRobotCount() > 15 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < 5) {
+        if (rc.getRobotCount() > 25 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < rc.getIslandCount()) {
             rc.setIndicatorString("Building anchor! " + anchorCount);
             rc.buildAnchor(Anchor.STANDARD);
             anchorCount += 1;
