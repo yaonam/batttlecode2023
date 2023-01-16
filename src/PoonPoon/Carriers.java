@@ -6,10 +6,6 @@ public class Carriers extends Base {
     MapLocation hqLoc = null;
 
     public void run(RobotController rc) throws GameActionException {
-        // TODO: remove this and use comm array
-        if (hqLoc == null)
-            hqLoc = rc.getLocation();
-
         // if near enemy, attack and then evade
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (nearbyEnemies.length > 0) {
