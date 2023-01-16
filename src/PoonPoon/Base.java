@@ -4,14 +4,12 @@ import java.util.Random;
 import battlecode.common.*;
 
 public abstract class Base {
-    // this class contains all reused variables and methods shared across all robot
-    // classes
+    // TODO: add comments @Bethel
     final int quad1 = 0;
     final int quad2 = 1;
     final int quad3 = 2;
     final int quad4 = 3;
     final int initialRobotCount = 7;
-    final int leadingZero = 70;
     int hqSection = 1;
     int quadSection = 5;
     int resourceSection = 8;
@@ -24,13 +22,11 @@ public abstract class Base {
     int adamantiumWellSection = wellSection + 4;
     int manaWellSection = adamantiumWellSection + 4;
     int elixirWellSection = manaWellSection + 4;
-    int arrayLength = 63;
 
     int adamantiumID = 101;
     int manaID = 102;
     int elixirID = 103;
 
-    int carrier_inventory = 40;
     int maxRobotCount;
 
     int quadRadiusFraction = 3 / 16;
@@ -374,4 +370,5 @@ public abstract class Base {
         }
         return nearestRobot;
     }
+
 }
