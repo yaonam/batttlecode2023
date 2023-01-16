@@ -10,6 +10,8 @@ public class Headquarters extends Base {
     int robotCount = 0;
     WellInfo[] wellInfo = null;
 
+    int anchorCount = 0;
+
     public void run(RobotController rc) throws GameActionException {
         if (rc.readSharedArray(0) == 0) {
             robotCount = rc.getRobotCount();
@@ -28,6 +30,11 @@ public class Headquarters extends Base {
         setInitialBuildLocation(rc, rc.senseNearbyWells());
         if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < getMaxRobotCount(rc)) {
             // buildRobot(rc, RobotType.AMPLIFIER);
+            if (rc.getRobotCount() > 15 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < 5) {
+                rc.setIndicatorString("Building anchor! " + anchorCount);
+                rc.buildAnchor(Anchor.STANDARD);
+                anchorCount += 1;
+            }
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
         }
