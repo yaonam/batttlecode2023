@@ -6,9 +6,9 @@ import battlecode.common.*;
 public abstract class Base {
     // this class contains all reused variables and methods shared across all robot
     // classes
-    final int quad1 = 7;
+    final int quad1 = 0;
     final int quad2 = 1;
-    final int quad3 = 5;
+    final int quad3 = 2;
     final int quad4 = 3;
     final int initialRobotCount = 7;
     final int leadingZero = 70;
@@ -65,27 +65,6 @@ public abstract class Base {
         }
 
         return location;
-    }
-
-    public Direction initialDirection(RobotController rc, int quadrant) {
-        // point robot towards the middle of the map
-        Direction direction = null;
-        switch (quadrant) {
-            case quad1:
-                direction = Direction.SOUTHEAST;
-                break;
-            case quad2:
-                direction = Direction.SOUTHWEST;
-                break;
-            case quad3:
-                direction = Direction.NORTHEAST;
-                break;
-            case quad4:
-                direction = Direction.NORTHWEST;
-                break;
-        }
-
-        return direction;
     }
 
     /**
@@ -158,41 +137,12 @@ public abstract class Base {
         return getDirectionsTo(rc, thisLoc.add(awayDirection));
     }
 
-    // work in progress
-    public int foundEnemyHQ(RobotController rc) throws GameActionException {
-        int quadrant = 0;
-        int enemyHQ = 0;
-        RobotInfo[] enemies = rc.senseNearbyRobots();
-        for (RobotInfo info : enemies) {
-            if (info.getType() == RobotType.HEADQUARTERS) {
-                if (rc.canWriteSharedArray(enemyHQ, quadrant)) {
-                    rc.writeSharedArray(enemyHQ, quadrant);
-                }
-            }
-        }
-        return quadrant;
-    }
-
     /** 
-     * Move to an unoccupied quadrant if there are enough friendly units nearby. Otherwise, attempt to move randomly.
+     * Move to an unoccupied quadrant if there are enough friendly units nearby. Otherwise, return to hq.
      */
-    public void targetQuadrant(RobotController rc, int quadrant) throws GameActionException {
+    public MapLocation occupyNewQuadrant(RobotController rc) throws GameActionException {
         MapLocation location = null;
-        switch (quadrant) {
-            case quad1:
-                location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() - rc.getMapHeight() / 4);
-                break;
-            case quad2:
-                location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4,
-                        rc.getMapHeight() - rc.getMapHeight() / 4);
-                break;
-            case quad3:
-                location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() / 4);
-                break;
-            case quad4:
-                location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4, rc.getMapHeight() / 4);
-                break;
-        }
+        location = findNearest(rc, quadSection, resourceSection);
 
         //if a certain amount of ally units are nearby, move towards target quadrant
         Direction dir = null;
@@ -201,18 +151,18 @@ public abstract class Base {
             if (rc.canMove(dir)) {
                 rc.move(dir);
             }
-        } else {
-            dir = directions[rng.nextInt(directions.length)];
+        } 
+        else if (scanForRobots(rc, "ally").length < 2) {
+            returnToHQ(rc);
+        }
+        else {
+            getRandDirection(rc);
             if (rc.canMove(dir)) {
                 rc.move(dir);
             }
         }
-    }
-
-    public int iterateArray(RobotController rc, int startIndex, int loopCount, int increment)
-            throws GameActionException {
-        startIndex += loopCount * increment;
-        return startIndex;
+        rc.setIndicatorString("Moving to quadrant: " + location);
+        return location;
     }
 
     public RobotInfo[] scanForRobots(RobotController rc, String status) throws GameActionException {
@@ -244,24 +194,6 @@ public abstract class Base {
         }
     }
 
-    public int convertResourcetoInt(ResourceType type) {
-        int id = 0;
-        switch (type) {
-            case ADAMANTIUM:
-                id = adamantiumID;
-                break;
-            case MANA:
-                id = manaID;
-                break;
-            case ELIXIR:
-                id = elixirID;
-                break;
-            default:
-                break;
-        }
-        return id;
-    }
-
     /** Check for nearby enemies and attack the first unit within range. Ignores hq as attack target. 
      * Then, determine whether to chase or retreat.
     */
@@ -277,8 +209,8 @@ public abstract class Base {
                     rc.attack(targetLocation);
                 }
             }
-            chaseOrRetreat(rc, targetLocation);
-        }
+            chaseOrEvadeEnemy(rc, targetLocation);
+        } 
     }
 
     /**  robot returns to nearby hq
@@ -286,7 +218,7 @@ public abstract class Base {
     public MapLocation returnToHQ(RobotController rc) throws GameActionException{
         MapLocation hqLocation = coordIntToLocation(RobotPlayer.closestTargetCoord);
         if (RobotPlayer.closestTargetCoord == 0) {
-            hqLocation = findClosestLocationFromArray(rc, hqSection, quadSection);
+            hqLocation = findNearest(rc, hqSection, quadSection);
             rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
         }
         rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
@@ -297,30 +229,38 @@ public abstract class Base {
     /**  If robot is a launcher, and enemy numbers are not greater than ally numbers, chase enemy. 
      * If robot is not a launcher or enemy numbers are too great, retreat to nearby hq. 
      **/
-    public void chaseOrRetreat (RobotController rc, MapLocation targetLocation) throws GameActionException {
-        // if robot is a launcher, perform chase or retreat manuever, move randomly if they cannot move in that direction, avoid currents
-        // if robot is a carrier, perform retreat maneuver
+    public void chaseOrEvadeEnemy(RobotController rc, MapLocation targetLocation) throws GameActionException {
         RobotInfo[] allies = scanForRobots(rc, "ally");
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
 
         if (allies.length > enemies.length && rc.getType() == RobotType.LAUNCHER) {
-            Direction dir = rc.getLocation().directionTo(targetLocation);
+            chaseEnemy(rc, targetLocation, allies, enemies);
+        } else {
+            evadeEnemy(rc, enemies);
+        }
+    }
+
+    public void chaseEnemy(RobotController rc, MapLocation targetLocation, RobotInfo[] allies, RobotInfo[] enemies) throws GameActionException{
+        Direction dir = rc.getLocation().directionTo(targetLocation);
+        if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
+            rc.move(dir);
+        } else {
+            dir = getRandDirection(rc);
             if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
                 rc.move(dir);
-            } else {
-                dir = getRandDirection(rc);
-                if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
-                    rc.move(dir);
-                    rc.setIndicatorString("CHASING");
-                }
+                rc.setIndicatorString("CHASING");
             }
-        } else {
-            MapLocation[] nearbyEnemyLocs = new MapLocation[enemies.length];
+        }
+    }
+
+    public void evadeEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException{
+        MapLocation[] nearbyEnemyLocs = new MapLocation[enemies.length];
+        if (nearbyEnemyLocs.length > 0) {
             for (int i = 0; i < enemies.length; i++)
-                nearbyEnemyLocs[i] = enemies[i].location;
-            MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
-            rc.setIndicatorString("Evading enemy!");
-            tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
+            nearbyEnemyLocs[i] = enemies[i].location;
+        MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
+        rc.setIndicatorString("Evading enemy!");
+        tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
         }
     }
 
@@ -338,7 +278,7 @@ public abstract class Base {
         }
     }
 
-    public MapLocation findClosestLocationFromArray(RobotController rc, int startIndex, int endIndex) throws GameActionException{
+    public MapLocation findNearest(RobotController rc, int startIndex, int endIndex) throws GameActionException{
         MapLocation currentLocation = rc.getLocation();
         int distance = 3600;
         int newDistance = 3600;
