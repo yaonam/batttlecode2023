@@ -30,13 +30,13 @@ public class Headquarters extends Base {
         setInitialBuildLocation(rc, rc.senseNearbyWells());
         if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 4) {
             // buildRobot(rc, RobotType.AMPLIFIER);
-            if (rc.getRobotCount() > 15 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < 5) {
-                rc.setIndicatorString("Building anchor! " + anchorCount);
-                rc.buildAnchor(Anchor.STANDARD);
-                anchorCount += 1;
-            }
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
+        }
+        if (rc.getRobotCount() > 15 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < 5) {
+            rc.setIndicatorString("Building anchor! " + anchorCount);
+            rc.buildAnchor(Anchor.STANDARD);
+            anchorCount += 1;
         }
         // uploadResourceAmount(rc);
     }
