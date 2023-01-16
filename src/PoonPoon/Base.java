@@ -175,7 +175,7 @@ public abstract class Base {
     }
 
     public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
-        if (rc.canMove(dir)) {
+        while (rc.canMove(dir)) {
             rc.move(dir);
         }
     }
