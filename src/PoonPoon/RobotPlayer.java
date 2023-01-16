@@ -14,17 +14,11 @@ import java.util.Set;
  */
 
 public strictfp class RobotPlayer {
-    /**
-     * We will use this variable to count the number of turns this robot has been
-     * alive.
-     * You can use static variables like this to save any information you want. Keep
-     * in mind that even though
-     * these variables are static, in Battlecode they aren't actually shared between
-     * your robots.
-     */
     static int turnCount = 0;
     static int wellCoord = 0;
+    // TODO: Need comment @Bethel
     static int closestTargetCoord = 0;
+
     /**
      * run() is the method that is called when a robot is instantiated in the
      * Battlecode world.
@@ -57,8 +51,6 @@ public strictfp class RobotPlayer {
             case DESTABILIZER:
                 break;
         }
-
-        System.out.println(rb);
 
         while (true) {
             // This code runs during the entire lifespan of the robot, which is why it is in
