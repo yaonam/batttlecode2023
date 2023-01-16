@@ -5,10 +5,10 @@ import battlecode.common.*;
 
 public abstract class Base {
     // TODO: add comments @Bethel
-    final int quad1 = 0;
-    final int quad2 = 1;
-    final int quad3 = 2;
-    final int quad4 = 3;
+    final int quad1 = 1;
+    final int quad2 = 2;
+    final int quad3 = 3;
+    final int quad4 = 4;
     final int initialRobotCount = 7;
     int hqSection = 1;
     int quadSection = 5;

@@ -28,7 +28,7 @@ public class Headquarters extends Base {
         // into quadrants. Build units towards the middle of the map or towards wells.
         // limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < getMaxRobotCount(rc)) {
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 4) {
             // buildRobot(rc, RobotType.AMPLIFIER);
             if (rc.getRobotCount() > 15 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < 5) {
                 rc.setIndicatorString("Building anchor! " + anchorCount);
@@ -38,7 +38,7 @@ public class Headquarters extends Base {
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
         }
-        uploadResourceAmount(rc);
+        // uploadResourceAmount(rc);
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
@@ -75,7 +75,7 @@ public class Headquarters extends Base {
             } else if (robotType == RobotType.CARRIER || robotType == RobotType.LAUNCHER) {
                 rc.buildRobot(robotType, buildLocation);
             }
-            subtractResourceAmount(rc, robotType);
+            // subtractResourceAmount(rc, robotType);
         }
     }
 
@@ -101,6 +101,7 @@ public class Headquarters extends Base {
         if (rc.canWriteSharedArray(index, 0) && index < quadSectionEnd) {
             int quadrant = initialMapQuadrant(rc);
             rc.writeSharedArray(index, quadrant);
+            rc.setIndicatorString("UPLOADING QUADRANT: " + quadrant);
         }
         if (index == quadSectionEnd && rc.canWriteSharedArray(index, 0)) {
             ArrayList<Integer> list = new ArrayList<Integer>();
@@ -108,7 +109,7 @@ public class Headquarters extends Base {
             list.add(quad2);
             list.add(quad3);
             list.add(quad4);
-            for (int i = startIndex; i < quadSectionEnd; i++) {
+            for (int i = quadSection; i < quadSectionEnd; i++) {
                 if (list.contains(rc.readSharedArray(i))) {
                     list.remove(Integer.valueOf(rc.readSharedArray(i)));
                 }
@@ -137,7 +138,6 @@ public class Headquarters extends Base {
             }
             writeToCommsArray(rc, 0, rc.getRobotCount() * 10 + list.size());
         }
-        rc.setIndicatorString("UPLOADING QUADRANT");
 
     }
 
@@ -154,39 +154,40 @@ public class Headquarters extends Base {
         }
     }
 
-    /**
-     * Update the resources section in the comms array every X turns by adding HQ
-     * current resources to resources section
-     */
-    public void uploadResourceAmount(RobotController rc) throws GameActionException {
-        if (rc.getRoundNum() % 5 == 0) {
-            int index = resourceSection - 1;
-            for (ResourceType rType : ResourceType.values()) {
-                rc.writeSharedArray(index + rType.resourceID,
-                        rc.readSharedArray(index + rType.resourceID) + rc.getResourceAmount(rType));
-            }
-            rc.setIndicatorString("CURRENT RESOURCES: " + rc.readSharedArray(adamantiumIndex) + ", "
-                    + rc.readSharedArray(manaIndex) + ", " + rc.readSharedArray(elixirIndex));
-        }
-    }
+    // /**
+    // * Update the resources section in the comms array every X turns by adding HQ
+    // current resources to resources section
+    // */
+    // public void uploadResourceAmount(RobotController rc) throws
+    // GameActionException {
+    // if (rc.getRoundNum() % 5 == 0 ) {
+    // int index = resourceSection - 1;
+    // for (ResourceType rType : ResourceType.values()) {
+    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
+    // rType.resourceID) + rc.getResourceAmount(rType));
+    // }
+    // rc.setIndicatorString("CURRENT RESOURCES: " +
+    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
+    // ", " + rc.readSharedArray(elixirIndex));
+    // }
+    // }
 
-    /**
-     * When building a robot, subtract the cost from the resources section in the
-     * comms array only when the amount of resources is greater than 0.
-     */
-    public void subtractResourceAmount(RobotController rc, RobotType robotType) throws GameActionException {
-        if (rc.readSharedArray(adamantiumIndex) > 0 && rc.readSharedArray(manaIndex) > 0) {
-            int index = resourceSection - 1;
-            for (ResourceType rType : ResourceType.values()) {
-                rc.writeSharedArray(index + rType.resourceID,
-                        rc.readSharedArray(index + rType.resourceID) - robotType.getBuildCost(rType));
-            }
-            rc.setIndicatorString("CURRENT RESOURCES: " + rc.readSharedArray(adamantiumIndex) + ", "
-                    + rc.readSharedArray(manaIndex) + ", " + rc.readSharedArray(elixirIndex));
-        }
-    }
-
-    public int getMaxRobotCount(RobotController rc) {
-        return rc.getMapHeight() * rc.getMapWidth() / 4;
-    }
+    // /**
+    // * When building a robot, subtract the cost from the resources section in the
+    // comms array only when the amount of resources is greater than 0.
+    // */
+    // public void subtractResourceAmount(RobotController rc, RobotType robotType)
+    // throws GameActionException{
+    // if (rc.readSharedArray(adamantiumIndex) > 0 && rc.readSharedArray(manaIndex)
+    // > 0) {
+    // int index = resourceSection - 1;
+    // for (ResourceType rType : ResourceType.values()) {
+    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
+    // rType.resourceID) - robotType.getBuildCost(rType));
+    // }
+    // rc.setIndicatorString("CURRENT RESOURCES: " +
+    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
+    // ", " + rc.readSharedArray(elixirIndex));
+    // }
+    // }
 }
