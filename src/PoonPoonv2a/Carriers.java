@@ -1,54 +1,61 @@
-package PoonPoon;
+package PoonPoonv2a;
 
 import battlecode.common.*;
 
 public class Carriers extends Base {
     public void run(RobotController rc) throws GameActionException {
-        act(rc);
-        move(rc);
-        act(rc);
+        // if near enemy, attack and then evade
+        RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+        if (nearbyEnemies.length > 0) {
+            RobotInfo nearestEnemy = attackNearestEnemy(rc, nearbyEnemies);
+            evadeRobot(rc, nearestEnemy);
+        }
+
+        // if not full capacity then go explore/collect
+        if (rc.getWeight() < GameConstants.CARRIER_CAPACITY) {
+            MapLocation nearestWell = findNearestWell(rc);
+            if (nearestWell != null) {
+                rc.setIndicatorString("Collecting at " + nearestWell);
+                collectOrMoveToWell(rc, nearestWell);
+            } else {
+                rc.setIndicatorString("Exploring!");
+                tryMoveTo(rc, getExploreDirection(rc));
+            }
+        }
+        // if full capacity, then return to hq/deposit
+        else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
+            MapLocation hqLocation = returnToHQ(rc);
+            transferResources(rc, hqLocation);
+        }
+
+        // action
+        // movement
+        // action
     }
 
     public void act(RobotController rc) throws GameActionException {
-        if (!rc.isActionReady())
-            return;
-
         MapLocation nearestHqLoc = findNearest(rc, hqSection, quadSection);
         // attack nearest enemy
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (nearbyEnemies.length > 0) {
-            rc.setIndicatorString("Attacking nearest enemy!");
             attackNearestEnemy(rc, nearbyEnemies);
         }
         if (rc.getLocation().isWithinDistanceSquared(nearestHqLoc, 2)) {
             // transferResources
-            if (rc.getWeight() > 0) {
-                rc.setIndicatorString("Transferring resources!");
+            if (rc.getWeight() > 0)
                 transferResources(rc, nearestHqLoc);
-            }
             // pickup/place anchor
-            // TODO: implement anchor stuff
         }
         // collect resources
         MapLocation nearestWell = findNearestWell(rc);
-        if (nearestWell != null && rc.canCollectResource(nearestWell, -1)) {
-            rc.setIndicatorString("Collecting resource!");
+        if (rc.canCollectResource(nearestWell, -1))
             rc.collectResource(nearestWell, -1);
-        }
-
     }
 
     public void move(RobotController rc) throws GameActionException {
-        rc.setIndicatorString("Is mvt ready? " + rc.isMovementReady());
-        if (!rc.isMovementReady())
-            return;
-
-        rc.setIndicatorString("Moving...");
-
         // evade nearest enemy
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (nearbyEnemies.length > 0) {
-            rc.setIndicatorString("Evading enemy!");
             evadeEnemies(rc, nearbyEnemies);
         }
         // explore/return
@@ -66,7 +73,6 @@ public class Carriers extends Base {
         }
         // return to hq
         else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
-            rc.setIndicatorString("Returning to hq!");
             returnToHQ(rc);
         }
     }
