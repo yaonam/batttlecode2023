@@ -11,21 +11,19 @@ public abstract class Base {
     final int quad3 = 5;
     final int quad4 = 3;
     final int initialRobotCount = 7;
-    int hqSectionIndex = 0;
-    int quadSection = 9;
-    int resourceSection = 12;
+    final int leadingZero = 70;
+    int hqSection = 1;
+    int quadSection = 5;
+    int resourceSection = 8;
+    int attackSection = 11;
+    int wellSection = 15;
     int adamantiumIndex = resourceSection;
     int manaIndex = resourceSection + 1;
     int elixirIndex = resourceSection + 2;
 
-    int hqSectionIncrement = 2;
-    int wellSectionIncrement = 3;
-    int attack_section_increment = 2;
-    int attackLocationSection = 15;
-    int wellSection = 23;
-    int adamantiumWellSection = wellSection + wellSectionIncrement * 4;
-    int manaWellSection = adamantiumWellSection + wellSectionIncrement * 4;
-    int elixirWellSection = manaWellSection + wellSectionIncrement * 4;
+    int adamantiumWellSection = wellSection + 4;
+    int manaWellSection = adamantiumWellSection + 4;
+    int elixirWellSection = manaWellSection + 4;
     int arrayLength = 63;
 
     int adamantiumID = 101;
@@ -175,6 +173,9 @@ public abstract class Base {
         return quadrant;
     }
 
+    /** 
+     * Move to an unoccupied quadrant if there are enough friendly units nearby. Otherwise, attempt to move randomly.
+     */
     public void targetQuadrant(RobotController rc, int quadrant) throws GameActionException {
         MapLocation location = null;
         switch (quadrant) {
@@ -193,9 +194,9 @@ public abstract class Base {
                 break;
         }
 
+        //if a certain amount of ally units are nearby, move towards target quadrant
         Direction dir = null;
-        if (location != null
-                && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction) {
+        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction && scanForRobots(rc, "ally").length >= 2) {
             dir = getDirectionsTo(rc, location);
             if (rc.canMove(dir)) {
                 rc.move(dir);
@@ -224,7 +225,7 @@ public abstract class Base {
                 team = rc.getTeam();
                 break;
             default:
-                team = rc.getTeam();
+                team = rc.getTeam(); 
                 break;
         }
         return rc.senseNearbyRobots(-1, team);
@@ -261,6 +262,9 @@ public abstract class Base {
         return id;
     }
 
+    /** Check for nearby enemies and attack the first unit within range. Ignores hq as attack target. 
+     * Then, determine whether to chase or retreat.
+    */
     public void attackEnemy(RobotController rc) throws GameActionException {
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
         if (enemies.length > 0) {
@@ -277,30 +281,24 @@ public abstract class Base {
         }
     }
 
-    public MapLocation returnToHQ(RobotController rc) throws GameActionException {
-        MapLocation current_location = rc.getLocation();
-        int distance = rc.getMapHeight();
-        int index = hqSectionIndex + 1;
-        int closest_hq_index = index;
-        while (rc.readSharedArray(index) != 0) {
-            MapLocation location = new MapLocation(rc.readSharedArray(index), rc.readSharedArray(index + 1));
-            int new_distance = current_location.distanceSquaredTo(location);
-            if (new_distance < distance) {
-                distance = new_distance;
-                closest_hq_index = index;
-            }
-            index = index + hqSectionIncrement;
+    /**  robot returns to nearby hq
+     **/
+    public MapLocation returnToHQ(RobotController rc) throws GameActionException{
+        MapLocation hqLocation = coordIntToLocation(RobotPlayer.closestTargetCoord);
+        if (RobotPlayer.closestTargetCoord == 0) {
+            hqLocation = findClosestLocationFromArray(rc, hqSection, quadSection);
+            rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
         }
-        MapLocation hqLocation = new MapLocation(rc.readSharedArray(closest_hq_index),
-                rc.readSharedArray(closest_hq_index + 1));
+        rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
         tryMoveTo(rc, hqLocation);
-        rc.setIndicatorString("Returning to HQ at: " + hqLocation);
         return hqLocation;
     }
 
-    public void chaseOrRetreat(RobotController rc, MapLocation targetLocation) throws GameActionException {
-        // if robot is a launcher, perform chase or retreat manuever, move randomly if
-        // they cannot move in that direction, avoid currents
+    /**  If robot is a launcher, and enemy numbers are not greater than ally numbers, chase enemy. 
+     * If robot is not a launcher or enemy numbers are too great, retreat to nearby hq. 
+     **/
+    public void chaseOrRetreat (RobotController rc, MapLocation targetLocation) throws GameActionException {
+        // if robot is a launcher, perform chase or retreat manuever, move randomly if they cannot move in that direction, avoid currents
         // if robot is a carrier, perform retreat maneuver
         RobotInfo[] allies = scanForRobots(rc, "ally");
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
@@ -317,12 +315,42 @@ public abstract class Base {
                 }
             }
         } else {
-            returnToHQ(rc);
+            MapLocation[] nearbyEnemyLocs = new MapLocation[enemies.length];
+            for (int i = 0; i < enemies.length; i++)
+                nearbyEnemyLocs[i] = enemies[i].location;
+            MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
+            rc.setIndicatorString("Evading enemy!");
+            tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
         }
     }
 
-    public int getMaxRobotCount(RobotController rc) {
-        return rc.getMapHeight() * rc.getMapWidth() / 4;
+    public int locationToCoordInt(MapLocation location) {
+        return (location.x * 100 + location.y);
+    }
+
+    public MapLocation coordIntToLocation(int coord) {
+        return new MapLocation(coord / 100, coord % 100);
+    }
+
+    public void writeToCommsArray(RobotController rc, int index, int val) throws GameActionException {
+        if (rc.canWriteSharedArray(index, val)) {
+            rc.writeSharedArray(index, val);
+        }
+    }
+
+    public MapLocation findClosestLocationFromArray(RobotController rc, int startIndex, int endIndex) throws GameActionException{
+        MapLocation currentLocation = rc.getLocation();
+        int distance = 3600;
+        int newDistance = 3600;
+        while (startIndex != endIndex) {
+            newDistance = currentLocation.distanceSquaredTo(coordIntToLocation(rc.readSharedArray(startIndex)));
+            if (distance > newDistance) {
+                distance = newDistance;
+                RobotPlayer.closestTargetCoord = rc.readSharedArray(startIndex);
+            }
+            startIndex++;
+        }
+        return coordIntToLocation(RobotPlayer.closestTargetCoord);
     }
 
     /**

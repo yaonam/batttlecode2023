@@ -1,9 +1,6 @@
 package PoonPoon;
 
 import battlecode.common.*;
-import java.util.Set;
-import java.util.Arrays;
-import java.util.HashSet;
 
 public class Carriers extends Base {
     MapLocation hqLoc = null;
@@ -17,12 +14,13 @@ public class Carriers extends Base {
         RobotInfo[] nearbyEnemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
         if (nearbyEnemies.length > 0) {
             // TODO: attack if non-zero weight? otherwise run?
-            MapLocation[] nearbyEnemyLocs = new MapLocation[nearbyEnemies.length];
-            for (int i = 0; i < nearbyEnemies.length; i++)
-                nearbyEnemyLocs[i] = nearbyEnemies[i].location;
-            MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
-            rc.setIndicatorString("Evading enemy!");
-            tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
+            // MapLocation[] nearbyEnemyLocs = new MapLocation[nearbyEnemies.length];
+            // for (int i = 0; i < nearbyEnemies.length; i++)
+            //     nearbyEnemyLocs[i] = nearbyEnemies[i].location;
+            // MapLocation nearestEnemyLoc = findNearest(rc, nearbyEnemyLocs);
+            // rc.setIndicatorString("Evading enemy!");
+            // tryMoveTo(rc, rc.getLocation().directionTo(nearestEnemyLoc).opposite());
+            attackEnemy(rc);
         }
         // if not full capacity then go explore/collect
         else if (rc.getWeight() < GameConstants.CARRIER_CAPACITY) {
@@ -41,8 +39,11 @@ public class Carriers extends Base {
         // if full capacity, then return to hq/deposit
         else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
             // return to hq
-            rc.setIndicatorString("Returning to HQ!");
-            tryMoveTo(rc, hqLoc);
+            // hqLoc = findNearest(rc, findArrayOfLocations(rc, hqSection, quadSection));
+            // rc.setIndicatorString("Returning to HQ at location: " + hqLoc);
+            // tryMoveTo(rc, hqLoc);
+            MapLocation hqLocation = returnToHQ(rc);
+            transferResources(rc, hqLocation);
         }
     }
 

@@ -23,6 +23,8 @@ public strictfp class RobotPlayer {
      * your robots.
      */
     static int turnCount = 0;
+    static int wellCoord = 0;
+    static int closestTargetCoord = 0;
 
     static final Random rng = new Random(6147);
 

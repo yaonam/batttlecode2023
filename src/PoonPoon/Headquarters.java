@@ -11,29 +11,28 @@ public class Headquarters extends Base {
     WellInfo[] wellInfo = null;
 
     public void run(RobotController rc) throws GameActionException {
-        if (rc.readSharedArray(hqSectionIndex) == 0) {
+        if (rc.readSharedArray(0) == 0) {
             robotCount = rc.getRobotCount();
             uploadCoord(rc);
             uploadQuadrant(rc);
             uploadWellCoord(rc, rc.senseNearbyWells());
+
+            // for (int i = 0; i < resourceSection; i++) {
+            //     System.out.println(rc.readSharedArray(i));
+            // }
         }
 
         // Pick a direction to build in. Dependent on location of HQ. We split the map
         // into quadrants. Build units towards the middle of the map or towards wells.
         // limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        if (rc.readSharedArray(hqSectionIndex) != 0 && rc.getRobotCount() < getMaxRobotCount(rc)) {
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < getMaxRobotCount(rc)) {
+            // buildRobot(rc, RobotType.AMPLIFIER);            
             buildRobot(rc, RobotType.LAUNCHER);
             buildRobot(rc, RobotType.CARRIER);
-
-            int quadIndex = rc.readSharedArray(hqSectionIndex);
-            int hqCount = Integer.parseInt(Integer.toString(quadIndex).substring(0, 1));
-            if (rc.getRobotCount() > initialRobotCount * hqCount) {
-                buildRobot(rc, RobotType.AMPLIFIER);
-            }
         }
 
-        uploadResources(rc);
+        uploadResourceAmount(rc);
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
@@ -68,28 +67,27 @@ public class Headquarters extends Base {
 
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException {
         buildLocation = adjustBuildLocation(rc, RobotType.CARRIER, initialBuildLocation);
+        
         if (rc.canBuildRobot(robotType, buildLocation)) {
-            if (rc.canBuildRobot(robotType, buildLocation)) {
+            if (robotType == RobotType.AMPLIFIER && rc.getRobotCount() > initialRobotCount * rc.readSharedArray(hqSection)/10) {
+                rc.buildRobot(robotType, buildLocation);
+            }
+            else if (robotType == RobotType.CARRIER || robotType == RobotType.LAUNCHER) {
                 rc.buildRobot(robotType, buildLocation);
             }
         }
     }
 
-    public void writeToCommsArray(RobotController rc, int index, int val) throws GameActionException {
-        if (rc.canWriteSharedArray(index, val)) {
-            rc.writeSharedArray(index, val);
-        }
-    }
-
     public void uploadCoord(RobotController rc) throws GameActionException {
-        int index = hqSectionIndex + 1;
-        int hqSection = robotCount * 2 + 1;
-        while (index < hqSection && rc.readSharedArray(index) != 0) {
-            index = index + 2;
+        int index = hqSection;
+        while (index < quadSection && rc.readSharedArray(index) != 0) {
+            index++;
         }
-        if (rc.canWriteSharedArray(index, 0) && rc.canWriteSharedArray(index + 1, 0) && index < hqSection) {
-            rc.writeSharedArray(index, rc.getLocation().x);
-            rc.writeSharedArray(index + 1, rc.getLocation().y);
+        if (rc.canWriteSharedArray(index, 0) && index < quadSection) {
+            // rc.writeSharedArray(index, rc.getLocation().x);
+            // rc.writeSharedArray(index + 1, rc.getLocation().y);
+            rc.writeSharedArray(index, locationToCoordInt(rc.getLocation()));
+            rc.setIndicatorString("" + coordIntToLocation(rc.readSharedArray(index)));
         }
     }
 
@@ -123,7 +121,7 @@ public class Headquarters extends Base {
                 rc.writeSharedArray(index, i);
                 index++;
             }
-            writeToCommsArray(rc, hqSectionIndex, rc.getRobotCount() * 10 + list.size()); 
+            writeToCommsArray(rc, 0, rc.getRobotCount() * 10 + list.size()); 
         }
     }
      
@@ -132,17 +130,14 @@ public class Headquarters extends Base {
             MapLocation wellLocation = info[0].getMapLocation();
             int index = wellSection;
             while (rc.readSharedArray(index) != 0) {
-                index = index + wellSectionIncrement;
+                index++;
             }
-            int resource = convertResourcetoInt(info[0].getResourceType());
-            writeToCommsArray(rc, index, resource);
-            writeToCommsArray(rc, index + 1, wellLocation.x);
-            writeToCommsArray(rc, index + 2 , wellLocation.y);
-            System.out.println("HERE1111111111 at index " + index + ": " + rc.readSharedArray(index) + ", " + rc.readSharedArray(index + 1) + ", " + rc.readSharedArray(index + 2));
+            writeToCommsArray(rc, index, locationToCoordInt(wellLocation));
+            System.out.println("HERE1111111111 at index " + index + ": " + rc.readSharedArray(index));
         }
     }
 
-    public void uploadResources(RobotController rc) throws GameActionException {
+    public void uploadResourceAmount(RobotController rc) throws GameActionException {
         if (rc.getRoundNum() % 10 == 0 ) {
             rc.setIndicatorString("UPLOADING TO COMMS ARRAY: " + rc.getResourceAmount(ResourceType.ADAMANTIUM) + "," 
                 + rc.getResourceAmount(ResourceType.MANA) + ", " 
@@ -151,6 +146,9 @@ public class Headquarters extends Base {
             rc.writeSharedArray(manaIndex, rc.getResourceAmount(ResourceType.MANA));
             rc.writeSharedArray(elixirIndex, rc.getResourceAmount(ResourceType.MANA));
         }
+    }
 
+    public int getMaxRobotCount(RobotController rc) {
+        return rc.getMapHeight() * rc.getMapWidth() / 4;
     }
 }

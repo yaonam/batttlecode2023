@@ -3,6 +3,7 @@ package PoonPoon;
 import battlecode.common.*;
 
 public class Launcher extends Base {
+    static int closestHQCoord = 0;
     public void run(RobotController rc) throws GameActionException {
         // scan for enemies and attack the first detected enemy unit that isn't the hq
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
@@ -20,8 +21,7 @@ public class Launcher extends Base {
 
     public void movetoQuadrant(RobotController rc) throws GameActionException {
         // count in the ones digit
-        int quadIndex = rc.readSharedArray(hqSectionIndex);
-        int targetQuadrants = Integer.parseInt(Integer.toString(quadIndex).substring(1, 2));
+        int targetQuadrants = rc.readSharedArray(0) % 10 ;
         int index = rc.getID() % targetQuadrants;
         int quadrant = rc.readSharedArray(quadSection + index);
         rc.setIndicatorString("Moving to quadrant: " + quadrant);
