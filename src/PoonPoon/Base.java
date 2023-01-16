@@ -199,7 +199,7 @@ public abstract class Base {
      * as attack target.
      * Then, determine whether to chase or retreat.
      */
-    public void attackEnemy(RobotController rc) throws GameActionException {
+    public void attackEnemy0(RobotController rc) throws GameActionException {
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
         if (enemies.length > 0) {
             RobotInfo target = attackNearestEnemy(rc, enemies);
@@ -207,6 +207,24 @@ public abstract class Base {
         }
     }
 
+    public void attackEnemy(RobotController rc) throws GameActionException {
+        RobotInfo[] enemies = scanForRobots(rc, "enemy");
+        if (enemies.length > 0) {
+            MapLocation targetLocation = enemies[0].location;
+            for (RobotInfo enemy : enemies) {
+                if (enemy.getType() != RobotType.HEADQUARTERS && rc.canAttack(enemy.getLocation())) {
+                    // this means we detected an enemy unit besides their hq within attack range
+                    targetLocation = enemy.location;
+                    rc.setIndicatorString("ENEMY FOUND AT: " + targetLocation);
+                    rc.attack(targetLocation);
+                }
+            }
+            chaseOrEvadeEnemy(rc, targetLocation);
+        }
+    }
+
+    // TODO: check to see which is more efficient: robot.location or
+    // robot.getLocation()
     public RobotInfo attackNearestEnemy(RobotController rc, RobotInfo[] enemies) throws GameActionException {
         RobotInfo target = findNearestRobot(rc, enemies);
         if (target != null && target.getType() != RobotType.HEADQUARTERS && rc.canAttack(target.location))
