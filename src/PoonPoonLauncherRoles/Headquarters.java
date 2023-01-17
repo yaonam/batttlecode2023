@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonLauncherRoles;
 
 import java.util.ArrayList;
 import battlecode.common.*;
@@ -18,7 +18,7 @@ public class Headquarters extends Base {
             uploadCoord(rc);
             uploadQuadrant(rc);
             uploadWellCoord(rc, rc.senseNearbyWells());
-
+            System.out.println("HERE111111111111111");
             for (int i = 0; i < resourceSection; i++) {
             System.out.println(rc.readSharedArray(i));
             }
@@ -28,19 +28,22 @@ public class Headquarters extends Base {
         // into quadrants. Build units towards the middle of the map or towards wells.
         // limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        int max = (rc.readSharedArray(0) % 10 * initialRobotCount * 3);
+        int max = rc.getMapHeight() * rc.getMapWidth() / 4 ;
         if (rc.readSharedArray(0) != 0 && rc.getRobotCount() <= max) {
             // buildRobot(rc, RobotType.AMPLIFIER);
             buildRobot(rc, RobotType.CARRIER);
             buildRobot(rc, RobotType.LAUNCHER);
         }
         
-        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() > (max-3) && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < rc.getIslandCount()) {
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() > (rc.readSharedArray(0) / 10 * initialRobotCount * 3) && rc.canBuildAnchor(Anchor.STANDARD) && rc.getRoundNum() % 9 == 0) {
             rc.setIndicatorString("Building anchor! " + anchorCount);
             rc.buildAnchor(Anchor.STANDARD);
+            System.out.println("BUILDING AN ANCHOR");
             anchorCount += 1;
         }
         // uploadResourceAmount(rc);
+        assignAttackLocation(rc);
+
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
@@ -57,14 +60,14 @@ public class Headquarters extends Base {
     // The extra conditions prevent the method from changing the location due to a
     // lack of resources or when location is too far away. A lack of resources will
     // stop the while loop.
-    public MapLocation adjustBuildLocation(RobotController rc, RobotType robotType, MapLocation location) {
-        while (!(rc.canBuildRobot(robotType, location))
-                && robotType.buildCostAdamantium <= rc.getResourceAmount(ResourceType.ADAMANTIUM)
-                && robotType.buildCostMana <= rc.getResourceAmount(ResourceType.MANA)
-                && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
-                && !rc.canActLocation(location)) {
+    public MapLocation adjustBuildLocation(RobotController rc, RobotType robotType, MapLocation location) throws GameActionException{
+        if (!rc.canBuildRobot(robotType, location)) {
             location = location.subtract(buildDirection);
-        }
+        } 
+        if (!rc.canBuildRobot(robotType, location)) {
+            location = location.subtract(buildDirection);
+        } 
+        rc.setIndicatorString("Attemping to build at:" + location);             
         return location;
     }
 
@@ -155,41 +158,38 @@ public class Headquarters extends Base {
             // rc.readSharedArray(index));
         }
     }
+  /**
+     * HQ and Amplifiers can assign locations for launchers with soldier roles to attack. 
+     * By default, HQ will upload locations based on ally units created, and current round number
+     * @param rc
+     * @param coord
+     * @throws GameActionException
+     */
+    public void assignAttackLocation(RobotController rc) throws GameActionException{
+        RobotInfo[] enemies = scanForRobots(rc, "enemy");
+        if (rc.getRoundNum() == 0) {
+            MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+            writeToCommsArray(rc, attackSection, locationToCoordInt(center));
+        }
 
-    // /**
-    // * Update the resources section in the comms array every X turns by adding HQ
-    // current resources to resources section
-    // */
-    // public void uploadResourceAmount(RobotController rc) throws
-    // GameActionException {
-    // if (rc.getRoundNum() % 5 == 0 ) {
-    // int index = resourceSection - 1;
-    // for (ResourceType rType : ResourceType.values()) {
-    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
-    // rType.resourceID) + rc.getResourceAmount(rType));
-    // }
-    // rc.setIndicatorString("CURRENT RESOURCES: " +
-    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
-    // ", " + rc.readSharedArray(elixirIndex));
-    // }
-    // }
-
-    // /**
-    // * When building a robot, subtract the cost from the resources section in the
-    // comms array only when the amount of resources is greater than 0.
-    // */
-    // public void subtractResourceAmount(RobotController rc, RobotType robotType)
-    // throws GameActionException{
-    // if (rc.readSharedArray(adamantiumIndex) > 0 && rc.readSharedArray(manaIndex)
-    // > 0) {
-    // int index = resourceSection - 1;
-    // for (ResourceType rType : ResourceType.values()) {
-    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
-    // rType.resourceID) - robotType.getBuildCost(rType));
-    // }
-    // rc.setIndicatorString("CURRENT RESOURCES: " +
-    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
-    // ", " + rc.readSharedArray(elixirIndex));
-    // }
-    // }
+        // if enemies are at HQ send help
+        if (enemies != null && enemies.length > 0 && rc.readSharedArray(attackSection) != locationToCoordInt(rc.getLocation())) {
+            System.out.println("SOS:" + locationToCoordInt(rc.getLocation()));
+            rc.writeSharedArray(attackSection, locationToCoordInt(rc.getLocation()));
+        } else if (enemies.length == 0 && rc.readSharedArray(attackSection) != 0 && rc.getLocation().equals(coordIntToLocation(rc.readSharedArray(attackSection)))) {
+            System.out.println("UPDATING ATTACK SECTION:");
+            rc.writeSharedArray(attackSection, 0);
+        } else if (rc.readSharedArray(0) != 0 && rc.readSharedArray(attackSection) == 0 && rc.getRobotCount() >= rc.readSharedArray(0) / 10 * initialRobotCount * 2) {
+                int quadrantCoord = rc.readSharedArray(quadSection);
+                rc.writeSharedArray(attackSection, quadrantCoord);
+                System.out.println("Targeting location: " + quadrantCoord);
+        } 
+        else if (rc.getRoundNum() >  100 && rc.readSharedArray(attackSection) != 0 && rc.getRobotCount() >= rc.readSharedArray(0) / 10 * initialRobotCount * 2) {
+            int quadrantCoord = rc.readSharedArray(quadSection);
+            rc.writeSharedArray(attackSection, 0);
+            quadrantCoord = rc.readSharedArray(quadSection + 1);
+            // System.out.println("Targeting new location: " + quadrantCoord);
+            rc.writeSharedArray(attackSection, quadrantCoord);
+        }
+    }
 }

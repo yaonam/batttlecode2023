@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonLauncherRoles;
 
 import battlecode.common.*;
 

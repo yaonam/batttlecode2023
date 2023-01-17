@@ -18,7 +18,8 @@ public class Launcher extends Base {
         // move towards other quadrants when no nearby enemies are present. Once near
         // the center of the quadrants, launchers will roam around.
         if (enemies.length <= 0) {
-            launcherMovement(rc, anchorCarrierID);
+            // launcherMovement(rc, anchorCarrierID);
+            occupyNewQuadrant(rc);
             attackEnemy(rc);
         }
         protectAnchorIsland(rc);

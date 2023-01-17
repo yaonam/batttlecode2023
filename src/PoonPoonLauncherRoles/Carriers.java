@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonLauncherRoles;
 
 import battlecode.common.*;
 
@@ -65,12 +65,7 @@ public class Carriers extends Base {
             MapLocation nearestIslandLoc = findNearestIsland(rc);
             if (nearestIslandLoc != null && rc.senseTeamOccupyingIsland(rc.senseIsland(nearestIslandLoc)) != rc.getTeam()) {
                 tryMoveTo(rc, nearestIslandLoc);
-            }
-            else if (nearestIslandLoc != null && rc.senseTeamOccupyingIsland(rc.senseIsland(nearestIslandLoc)) == rc.getTeam()) {
-                // if carrier locates an island with our anchor then avoid it
-                tryMoveTo(rc, rc.getLocation().directionTo(nearestIslandLoc).opposite());
-            }
-            else {
+            } else {
                 // explore for island
                 tryMoveTo(rc, getExploreDirection(rc));
             }

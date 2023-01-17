@@ -1,4 +1,4 @@
-package PoonPoon;
+package PoonPoonLauncherRoles;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -25,29 +25,33 @@ public class Launcher extends Base {
         assignRole(rc);
         // scan for enemies and attack the first detected enemy unit that isn't the hq
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
-        if (enemies.length > 0) {
+        if (enemies.length > 0 && enemies[0].type != RobotType.HEADQUARTERS) {
             launcherCombat(rc, role);
         }
         // move towards other quadrants when no nearby enemies are present. Once near
         // the center of the quadrants, launchers will roam around.
-        if (enemies.length <= 0) {
-            launcherMovement(rc, role);
-            launcherCombat(rc, role);
-        }
+        launcherMovement(rc, role);
+        launcherCombat(rc, role);
     }
 
     public void assignRole(RobotController rc) throws GameActionException{
+        // the max number of robots created at beginning of match
+        int initialCount = rc.readSharedArray(0) / 10 + (rc.readSharedArray(0) / 10 * initialRobotCount);
         if (role == 0) {
-            if (rc.getRoundNum() < 5) {
+            if (rc.getRobotCount() <= initialCount && rc.getRoundNum() < 20) {
                 role = 1;
             }
-            else if (rc.getRobotCount() > rc.readSharedArray(0) / 10 * initialRobotCount) {
+            else if (rc.getRobotCount() > initialCount) {
                 role = 2;
             }
-            else if (rc.getRoundNum() < rc.readSharedArray(0) / 10 * initialRobotCount) {
+            else if (rc.getRoundNum() > initialCount && rc.getRoundNum() % 20 == 0) {
                 role = 3;
             }
+            else {
+                role = 2;
+            }
         }
+        rc.setIndicatorString("I've been assinged role: " + role + ", " + rc.readSharedArray(0) / 10 * initialRobotCount);
     }
 
     /**
@@ -63,8 +67,8 @@ public class Launcher extends Base {
                 // assassins go into unoccupied quadrants 
                 occupyNewQuadrant(rc);
             case 2: 
-                // soldiers move to target locations as a group
-                tryMoveTo(rc, coordIntToLocation(rc.readSharedArray(attackSection)));
+                // soldiers move to the center and attack locations given at attackSection
+                soldierMovement(rc);
             case 3:
                 // patrols roam randomly in our quadrants and occupy anchored islands
                 protectAnchorIsland(rc);
@@ -73,14 +77,19 @@ public class Launcher extends Base {
     }
 
     public void launcherCombat(RobotController rc, int roleID) throws GameActionException{
-        RobotInfo[] targets = findRobots(rc, RobotType.LAUNCHER);
+        RobotInfo[] targets = findRobots(rc, "enemy", RobotType.LAUNCHER);
         switch (roleID) {
             case 1:
                 // assassins will attempt to evade enemy launchers and attack other robot types besides HQ
                 if (targets != null) {
                     evadeEnemies(rc, targets);
                 }
-                attackEnemy(rc);
+                targets = scanForRobots(rc, "enemy");
+                RobotInfo robot = attackNearestEnemy(rc, targets);
+                if (robot != null) {
+                    tryMoveTo(rc, robot.getLocation());
+                }
+
             case 2: 
                 // soldiers prioritize launchers then other robot types
                 if (targets != null) {
@@ -94,19 +103,6 @@ public class Launcher extends Base {
                 attackEnemy(rc);
                 break;  
         }
-    }
-
-    /**
-     *  Launchers check if there are any carriers carrying anchors, and the number of ally units within vision. 
-     *  If there are carriers with anchors and there are more than X amount of allies nearby, then follow the carrier.
-     *  Otherwise, attempt to defend current anchor islands.
-     */
-    public void defendAnchor(RobotController rc) throws GameActionException{
-        MapLocation location = findEnemyIslandLocation(rc, rc.senseNearbyIslands());
-        if (location != null) {
-            tryMoveTo(rc, location);
-        }
-        protectAnchorIsland(rc);     
     }
 
     public void protectAnchorIsland(RobotController rc) throws GameActionException{
@@ -149,38 +145,8 @@ public class Launcher extends Base {
         return null;
     }
 
-    /**
-     * Finds the nearest anchor island location occupied by an enemy anchor.  
-     * @param rc
-     * @param anchorIslands
-     * @return
-     * @throws GameActionException
-     */
-    public MapLocation findEnemyIslandLocation(RobotController rc, int[] anchorIslands) throws GameActionException {
-        MapLocation location = null;
-        for (int anchor : anchorIslands) {
-            if (rc.senseTeamOccupyingIsland(anchor) == rc.getTeam().opponent()) {
-                location = findNearest(rc, rc.senseNearbyIslandLocations(anchor));
-                break;
-            }
-        }
-        return location;
-    }
-
-    public void soldierMovement(RobotController rc) throws GameActionException{
-        RobotInfo[] robots = rc.senseNearbyRobots();
-        if (robots != null) {
-            for (RobotInfo robot: robots) {
-                if (robot.getType() == RobotType.LAUNCHER) {
-                    launcherCount++;
-                }
-            }
-            occupyNewQuadrant(rc);
-        }
-    }
-
-    public RobotInfo[] findRobots(RobotController rc, RobotType type) throws GameActionException{
-        RobotInfo[] robots = scanForRobots(rc, "enemy");
+    public RobotInfo[] findRobots(RobotController rc, String allyOrEnemy,RobotType type) throws GameActionException{
+        RobotInfo[] robots = scanForRobots(rc, allyOrEnemy);
         ArrayList<RobotInfo> targets = new ArrayList<RobotInfo>();
         for (RobotInfo robot : robots) {
             if (robot.getType() == type) {
@@ -188,5 +154,15 @@ public class Launcher extends Base {
             }
         }
         return targets.toArray(new RobotInfo[targets.size()]);
+    }
+
+    public void soldierMovement(RobotController rc) throws GameActionException{
+        if (rc.readSharedArray(attackSection) == 0) {
+            tryMoveTo(rc, new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2));
+            rc.setIndicatorString("Moving to center:" );
+        } else {
+            rc.setIndicatorString("Attacking: " + coordIntToLocation(rc.readSharedArray(attackSection)));
+            tryMoveTo(rc, coordIntToLocation(rc.readSharedArray(attackSection)));
+        }
     }
 }

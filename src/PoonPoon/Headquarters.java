@@ -156,7 +156,6 @@ public class Headquarters extends Base {
             // rc.readSharedArray(index));
         }
     }
-
     // /**
     // * Update the resources section in the comms array every X turns by adding HQ
     // current resources to resources section
