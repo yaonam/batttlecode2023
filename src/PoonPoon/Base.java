@@ -139,7 +139,7 @@ public abstract class Base {
      */
     public MapLocation occupyNewQuadrant(RobotController rc) throws GameActionException {
         MapLocation location = null;
-        location = findNearest(rc, quadSection, resourceSection);
+        location = findNearest(rc, quadSection, resourceSection - rc.readSharedArray(0) % 10);
 
         // if a certain amount of ally units are nearby, move towards target quadrant
         if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction
@@ -242,7 +242,7 @@ public abstract class Base {
         RobotInfo[] allies = scanForRobots(rc, "ally");
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
 
-        if (allies.length > enemies.length && rc.getType() == RobotType.LAUNCHER) {
+        if (allies.length + 1 > enemies.length && rc.getType() == RobotType.LAUNCHER) {
             chaseEnemy(rc, targetLocation, allies, enemies);
         } else {
             evadeEnemies(rc, enemies);

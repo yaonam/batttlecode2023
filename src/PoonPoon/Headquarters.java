@@ -19,22 +19,25 @@ public class Headquarters extends Base {
             uploadQuadrant(rc);
             uploadWellCoord(rc, rc.senseNearbyWells());
 
-            // for (int i = 0; i < resourceSection; i++) {
-            // System.out.println(rc.readSharedArray(i));
-            // }
+            for (int i = 0; i < resourceSection; i++) {
+            System.out.println(rc.readSharedArray(i));
+            }
         }
 
         // Pick a direction to build in. Dependent on location of HQ. We split the map
         // into quadrants. Build units towards the middle of the map or towards wells.
         // limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() < rc.getMapHeight() * rc.getMapWidth() / 4) {
+        int max = (rc.readSharedArray(0) % 10 * initialRobotCount * 3);
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() <= max) {
             // buildRobot(rc, RobotType.AMPLIFIER);
             buildRobot(rc, RobotType.CARRIER);
             buildRobot(rc, RobotType.LAUNCHER);
         }
-        if (rc.getRobotCount() > 25 && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < rc.getIslandCount()) {
+        
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() > (max-3) && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < rc.getIslandCount()) {
             rc.setIndicatorString("Building anchor! " + anchorCount);
+            System.out.println("ANCHOR111111111 UNIT COUNT: " + max);
             rc.buildAnchor(Anchor.STANDARD);
             anchorCount += 1;
         }
