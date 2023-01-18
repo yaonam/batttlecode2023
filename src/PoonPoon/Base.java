@@ -11,6 +11,7 @@ public abstract class Base {
     final int quad3 = 3;
     final int quad4 = 4;
     final int initialRobotCount = 7;
+    Direction currentdirection;
     int hqSection = 1;
     int quadSection = 5;
     int resourceSection = 8;
@@ -225,7 +226,8 @@ public abstract class Base {
     public MapLocation returnToHQ(RobotController rc) throws GameActionException {
         MapLocation hqLocation = coordIntToLocation(RobotPlayer.closestTargetCoord);
         if (RobotPlayer.closestTargetCoord == 0) {
-            hqLocation = findNearest(rc, hqSection, quadSection);
+            int hqCount = rc.readSharedArray(0) / 10;
+            hqLocation = findNearest(rc, hqSection, hqSection + hqCount);
             rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
         }
         rc.setIndicatorString("Returning to HQ at: " + (hqLocation));
@@ -371,5 +373,15 @@ public abstract class Base {
             }
         }
         return targets.toArray(new RobotInfo[targets.size()]);
+    }
+
+    /*
+     * This handles navigating obstacles. Returns direction or Direction.CENTER if no directions are present.
+     */
+    public Direction bugNav(RobotController rc) {
+        Direction direction = Direction.CENTER;
+
+
+        return direction;
     }
 }
