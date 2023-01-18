@@ -11,7 +11,7 @@ public abstract class Base {
     final int quad3 = 3;
     final int quad4 = 4;
     final int initialRobotCount = 7;
-    Direction currentdirection;
+    Direction currentdirection = null;
     int hqSection = 1;
     int quadSection = 5;
     int resourceSection = 8;
@@ -378,9 +378,9 @@ public abstract class Base {
     /*
      * This handles navigating obstacles. Returns direction or Direction.CENTER if no directions are present.
      */
-    public Direction bugNav(RobotController rc) {
-        Direction direction = Direction.CENTER;
+    public Direction bugNav(RobotController rc, Direction direction) {
 
+        currentdirection = direction;
 
         return direction;
     }
