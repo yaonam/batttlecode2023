@@ -14,7 +14,6 @@ import java.util.Set;
  */
 
 public strictfp class RobotPlayer {
-    static int turnCount = 0;
     static int wellCoord = 0;
     // TODO: Need comment @Bethel
     static int closestTargetCoord = 0;
@@ -57,8 +56,6 @@ public strictfp class RobotPlayer {
             // an infinite loop. If we ever leave this loop and return from run(), the robot
             // dies! At the end of the loop, we call Clock.yield(), signifying that we've
             // done everything we want to do.
-
-            turnCount += 1; // We have now been alive for one more turn!
 
             // Try/catch blocks stop unhandled exceptions, which cause your robot to
             // explode.

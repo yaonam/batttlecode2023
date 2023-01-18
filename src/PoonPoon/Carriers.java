@@ -4,6 +4,7 @@ import battlecode.common.*;
 
 public class Carriers extends Base {
     public void run(RobotController rc) throws GameActionException {
+        recordLoc(rc);
         act(rc);
         move(rc);
         act(rc);
@@ -63,7 +64,8 @@ public class Carriers extends Base {
         // If holding an anchor
         if (rc.getAnchor() != null) {
             MapLocation nearestIslandLoc = findNearestIsland(rc);
-            if (nearestIslandLoc != null && rc.senseTeamOccupyingIsland(rc.senseIsland(nearestIslandLoc)) != rc.getTeam()) {
+            if (nearestIslandLoc != null
+                    && rc.senseTeamOccupyingIsland(rc.senseIsland(nearestIslandLoc)) != rc.getTeam()) {
                 tryMoveTo(rc, nearestIslandLoc);
             } else {
                 // explore for island
