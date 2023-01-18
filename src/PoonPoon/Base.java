@@ -44,7 +44,23 @@ public abstract class Base {
             Direction.NORTHWEST,
     };
 
+    MapLocation locHistory = null;
+
     public abstract void run(RobotController rc) throws GameActionException;
+
+    /**
+     * Updates locHistory by a weighted avg
+     */
+    public void recordLoc(RobotController rc) {
+        MapLocation myLoc = rc.getLocation();
+        if (locHistory == null) {
+            locHistory = myLoc;
+        } else {
+            int newX = (int) (0.3 * locHistory.x + 0.7 * myLoc.x);
+            int newY = (int) (0.3 * locHistory.y + 0.7 * myLoc.y);
+            locHistory = new MapLocation(newX, newY);
+        }
+    }
 
     public Integer initialMapQuadrant(RobotController rc) {
         int location;
@@ -119,20 +135,27 @@ public abstract class Base {
      * getExploreDirection() gives a direction that tries to point away from
      * other robots on your team.
      */
-    public static Direction getExploreDirection(RobotController rc) throws GameActionException {
+    public Direction getExploreDirection(RobotController rc) throws GameActionException {
         // find nearby robots
-        RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
+        // RobotInfo[] nearbyRobots = rc.senseNearbyRobots(-1, rc.getTeam());
 
         // figure out "outermost" direction
         // avg all the locations of the nearby robots
-        MapLocation thisLoc = rc.getLocation();
-        MapLocation avgRobotLoc = rc.getLocation();
-        for (int i = 0; i < nearbyRobots.length; i++)
-            avgRobotLoc.add(thisLoc.directionTo(nearbyRobots[i].getLocation()));
-        Direction awayDirection = avgRobotLoc.directionTo(thisLoc);
+        // MapLocation thisLoc = rc.getLocation();
+        // MapLocation avgRobotLoc = rc.getLocation();
+        // for (int i = 0; i < nearbyRobots.length; i++)
+        // avgRobotLoc.add(thisLoc.directionTo(nearbyRobots[i].getLocation()));
+        // Direction awayDirection = avgRobotLoc.directionTo(thisLoc);
+        // return getDirectionsTo(rc, thisLoc.add(awayDirection));
 
-        // try to move that way
-        return getDirectionsTo(rc, thisLoc.add(awayDirection));
+        // TODO: make them move away from same type
+
+        // move away from locHistory
+        if (rng.nextInt(2) == 0 && locHistory.equals(rc.getLocation())) {
+            rc.setIndicatorString("Exploring away from: " + locHistory);
+            return getDirectionsTo(rc, locHistory).opposite();
+        }
+        return getRandDirection(rc);
     }
 
     /**
@@ -177,8 +200,9 @@ public abstract class Base {
     }
 
     public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
-        while (rc.canMove(dir)) {
+        if (rc.canMove(dir)) {
             rc.move(dir);
+            tryMoveTo(rc, getDirectionsTo(rc, rc.getLocation().add(dir)));
         }
     }
 
@@ -187,27 +211,11 @@ public abstract class Base {
      * as attack target.
      * Then, determine whether to chase or retreat.
      */
-    public void attackEnemy0(RobotController rc) throws GameActionException {
+    public void attackEnemyThenChaseRetreat(RobotController rc) throws GameActionException {
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
         if (enemies.length > 0) {
             RobotInfo target = attackNearestEnemy(rc, enemies);
             chaseOrEvadeEnemy(rc, target.location);
-        }
-    }
-
-    public void attackEnemy(RobotController rc) throws GameActionException {
-        RobotInfo[] enemies = scanForRobots(rc, "enemy");
-        if (enemies.length > 0) {
-            MapLocation targetLocation = enemies[0].location;
-            for (RobotInfo enemy : enemies) {
-                if (enemy.getType() != RobotType.HEADQUARTERS && rc.canAttack(enemy.getLocation())) {
-                    // this means we detected an enemy unit besides their hq within attack range
-                    targetLocation = enemy.location;
-                    rc.setIndicatorString("ENEMY FOUND AT: " + targetLocation);
-                    rc.attack(targetLocation);
-                }
-            }
-            chaseOrEvadeEnemy(rc, targetLocation);
         }
     }
 
@@ -364,7 +372,8 @@ public abstract class Base {
         return nearestRobot;
     }
 
-    public RobotInfo[] scanForRobots(RobotController rc, String allyOrEnemy,RobotType type) throws GameActionException{
+    public RobotInfo[] scanForRobots(RobotController rc, String allyOrEnemy, RobotType type)
+            throws GameActionException {
         RobotInfo[] robots = scanForRobots(rc, allyOrEnemy);
         ArrayList<RobotInfo> targets = new ArrayList<RobotInfo>();
         for (RobotInfo robot : robots) {
@@ -376,7 +385,8 @@ public abstract class Base {
     }
 
     /*
-     * This handles navigating obstacles. Returns direction or Direction.CENTER if no directions are present.
+     * This handles navigating obstacles. Returns direction or Direction.CENTER if
+     * no directions are present.
      */
     public Direction bugNav(RobotController rc, Direction direction) {
 
