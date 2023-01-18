@@ -148,8 +148,10 @@ public abstract class Base {
         // Direction awayDirection = avgRobotLoc.directionTo(thisLoc);
         // return getDirectionsTo(rc, thisLoc.add(awayDirection));
 
+        // TODO: make them move away from same type
+
         // move away from locHistory
-        if (rng.nextInt(2) == 0) {
+        if (rng.nextInt(2) == 0 && locHistory.equals(rc.getLocation())) {
             rc.setIndicatorString("Exploring away from: " + locHistory);
             return getDirectionsTo(rc, locHistory).opposite();
         }
@@ -198,8 +200,9 @@ public abstract class Base {
     }
 
     public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
-        while (rc.canMove(dir)) {
+        if (rc.canMove(dir)) {
             rc.move(dir);
+            tryMoveTo(rc, getDirectionsTo(rc, rc.getLocation().add(dir)));
         }
     }
 
@@ -382,7 +385,8 @@ public abstract class Base {
     }
 
     /*
-     * This handles navigating obstacles. Returns direction or Direction.CENTER if no directions are present.
+     * This handles navigating obstacles. Returns direction or Direction.CENTER if
+     * no directions are present.
      */
     public Direction bugNav(RobotController rc, Direction direction) {
 
