@@ -1,5 +1,6 @@
 package PoonPoon;
 
+import java.util.ArrayList;
 import java.util.Random;
 import battlecode.common.*;
 
@@ -139,7 +140,7 @@ public abstract class Base {
      */
     public MapLocation occupyNewQuadrant(RobotController rc) throws GameActionException {
         MapLocation location = null;
-        location = findNearest(rc, quadSection, resourceSection);
+        location = findNearest(rc, quadSection, resourceSection + 1 - rc.readSharedArray(0) % 10);
 
         // if a certain amount of ally units are nearby, move towards target quadrant
         if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction
@@ -242,7 +243,7 @@ public abstract class Base {
         RobotInfo[] allies = scanForRobots(rc, "ally");
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
 
-        if (allies.length > enemies.length && rc.getType() == RobotType.LAUNCHER) {
+        if (allies.length + 1 > enemies.length && rc.getType() == RobotType.LAUNCHER) {
             chaseEnemy(rc, targetLocation, allies, enemies);
         } else {
             evadeEnemies(rc, enemies);
@@ -258,9 +259,9 @@ public abstract class Base {
             dir = getRandDirection(rc);
             if (rc.canMove(dir) && rc.senseMapInfo(rc.getLocation().add(dir)).getCurrentDirection() != null) {
                 rc.move(dir);
-                rc.setIndicatorString("CHASING");
             }
         }
+        rc.setIndicatorString("CHASING");
     }
 
     /**
@@ -361,4 +362,14 @@ public abstract class Base {
         return nearestRobot;
     }
 
+    public RobotInfo[] scanForRobots(RobotController rc, String allyOrEnemy,RobotType type) throws GameActionException{
+        RobotInfo[] robots = scanForRobots(rc, allyOrEnemy);
+        ArrayList<RobotInfo> targets = new ArrayList<RobotInfo>();
+        for (RobotInfo robot : robots) {
+            if (robot.getType() == type) {
+                targets.add(robot);
+            }
+        }
+        return targets.toArray(new RobotInfo[targets.size()]);
+    }
 }

@@ -20,7 +20,7 @@ public class Carriers extends Base {
             rc.setIndicatorString("Attacking nearest enemy!");
             attackNearestEnemy(rc, nearbyEnemies);
         }
-        if (rc.getLocation().isWithinDistanceSquared(nearestHqLoc, 2)) {
+        if (rc.getLocation().isWithinDistanceSquared(nearestHqLoc, 2) && rc.getAnchor() == null) {
             // transferResources
             if (rc.getWeight() > 0) {
                 rc.setIndicatorString("Transferring resources!");
@@ -63,8 +63,11 @@ public class Carriers extends Base {
         // If holding an anchor
         if (rc.getAnchor() != null) {
             MapLocation nearestIslandLoc = findNearestIsland(rc);
-            if (nearestIslandLoc != null) {
+            if (nearestIslandLoc != null && rc.senseTeamOccupyingIsland(rc.senseIsland(nearestIslandLoc)) != rc.getTeam()) {
                 tryMoveTo(rc, nearestIslandLoc);
+            } else {
+                // explore for island
+                tryMoveTo(rc, getExploreDirection(rc));
             }
         }
         // explore/return
@@ -81,7 +84,7 @@ public class Carriers extends Base {
             }
         }
         // return to hq
-        else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY) {
+        else if (rc.getWeight() == GameConstants.CARRIER_CAPACITY && rc.getAnchor() == null) {
             rc.setIndicatorString("Returning to hq!");
             returnToHQ(rc);
         }
