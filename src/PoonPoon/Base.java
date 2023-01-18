@@ -361,4 +361,15 @@ public abstract class Base {
         }
         return nearestRobot;
     }
+
+    public RobotInfo[] scanForRobots(RobotController rc, String allyOrEnemy,RobotType type) throws GameActionException{
+        RobotInfo[] robots = scanForRobots(rc, allyOrEnemy);
+        ArrayList<RobotInfo> targets = new ArrayList<RobotInfo>();
+        for (RobotInfo robot : robots) {
+            if (robot.getType() == type) {
+                targets.add(robot);
+            }
+        }
+        return targets.toArray(new RobotInfo[targets.size()]);
+    }
 }

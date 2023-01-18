@@ -1,6 +1,7 @@
 package PoonPoon;
 
 import java.util.ArrayList;
+
 import battlecode.common.*;
 
 public class Headquarters extends Base {
@@ -15,33 +16,33 @@ public class Headquarters extends Base {
     public void run(RobotController rc) throws GameActionException {
         if (rc.readSharedArray(0) == 0) {
             robotCount = rc.getRobotCount();
-            uploadCoord(rc);
-            uploadQuadrant(rc);
+            uploadCoord(rc, robotCount);
+            writeToQuadrantSection(rc);
             uploadWellCoord(rc, rc.senseNearbyWells());
-
-            for (int i = 0; i < resourceSection; i++) {
-            System.out.println(rc.readSharedArray(i));
-            }
+            // System.out.println("HERE111111111111111");
+            // for (int i = 0; i < resourceSection; i++) {
+            // System.out.println(rc.readSharedArray(i));
+            // }
         }
 
-        // Pick a direction to build in. Dependent on location of HQ. We split the map
-        // into quadrants. Build units towards the middle of the map or towards wells.
-        // limit the number of units we can build
+        // Pick a direction to build in. 
+        // Build units towards the middle of the map or towards wells.
+        // Limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
-        int max = (rc.readSharedArray(0) % 10 * initialRobotCount * 3);
+        int max = rc.getMapHeight() * rc.getMapWidth() / 4 ;
         if (rc.readSharedArray(0) != 0 && rc.getRobotCount() <= max) {
             // buildRobot(rc, RobotType.AMPLIFIER);
             buildRobot(rc, RobotType.CARRIER);
             buildRobot(rc, RobotType.LAUNCHER);
         }
         
-        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() > (max-3) && rc.canBuildAnchor(Anchor.STANDARD) && anchorCount < rc.getIslandCount()) {
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() > (rc.readSharedArray(0) / 10 * initialRobotCount * 3) && rc.canBuildAnchor(Anchor.STANDARD) && rc.getRoundNum() % 9 == 0) {
             rc.setIndicatorString("Building anchor! " + anchorCount);
-            System.out.println("ANCHOR111111111 UNIT COUNT: " + max);
             rc.buildAnchor(Anchor.STANDARD);
+            System.out.println("BUILDING AN ANCHOR");
             anchorCount += 1;
         }
-        // uploadResourceAmount(rc);
+        assignAttackLocation(rc);
     }
 
     public void setInitialBuildLocation(RobotController rc, WellInfo[] wellInfo) {
@@ -55,20 +56,21 @@ public class Headquarters extends Base {
         }
     }
 
-    // The extra conditions prevent the method from changing the location due to a
-    // lack of resources or when location is too far away. A lack of resources will
-    // stop the while loop.
-    public MapLocation adjustBuildLocation(RobotController rc, RobotType robotType, MapLocation location) {
-        while (!(rc.canBuildRobot(robotType, location))
-                && robotType.buildCostAdamantium <= rc.getResourceAmount(ResourceType.ADAMANTIUM)
-                && robotType.buildCostMana <= rc.getResourceAmount(ResourceType.MANA)
-                && robotType.buildCostElixir <= rc.getResourceAmount(ResourceType.ELIXIR)
-                && !rc.canActLocation(location)) {
+    // While loop doesn't work with !rc.canBuildRobot() for some reason. 
+    public MapLocation adjustBuildLocation(RobotController rc, RobotType robotType, MapLocation location) throws GameActionException{
+        if (!rc.canBuildRobot(robotType, location)) {
             location = location.subtract(buildDirection);
-        }
+        } 
+        if (!rc.canBuildRobot(robotType, location)) {
+            location = location.subtract(buildDirection);
+        } 
+        rc.setIndicatorString("Attemping to build at:" + location);             
         return location;
     }
 
+    /*
+     * Build robot type.
+     */
     public void buildRobot(RobotController rc, RobotType robotType) throws GameActionException {
         buildLocation = adjustBuildLocation(rc, robotType, initialBuildLocation);
         if (rc.canBuildRobot(robotType, buildLocation)) {
@@ -82,66 +84,92 @@ public class Headquarters extends Base {
         }
     }
 
-    public void uploadCoord(RobotController rc) throws GameActionException {
+    public void uploadCoord(RobotController rc, int hqCount) throws GameActionException {
         int index = hqSection;
-        while (index < quadSection && rc.readSharedArray(index) != 0) {
+        while (index < hqSection + hqCount && rc.readSharedArray(index) != 0) {
             index++;
         }
-        if (rc.canWriteSharedArray(index, 0) && index < quadSection) {
+        if (rc.canWriteSharedArray(index, 0) && index < hqSection + hqCount) {
             rc.setIndicatorString("UPLOADING COORD: " + coordIntToLocation(rc.readSharedArray(index)));
             rc.writeSharedArray(index, locationToCoordInt(rc.getLocation()));
         }
     }
 
-    public void uploadQuadrant(RobotController rc) throws GameActionException {
+    public void writeToQuadrantSection(RobotController rc) throws GameActionException{
         int startIndex = quadSection;
-        int quadSectionEnd = startIndex + robotCount;
+        int quadSectionEnd = quadSection + robotCount;
+        int index = uploadQuadrantID(rc, startIndex, quadSectionEnd);
+        if (index == quadSectionEnd) {
+            ArrayList<Integer> list = findUnoccupiedQuadrantID(rc, startIndex, quadSectionEnd);
+            translateQuadrantIDToLocations(rc, list);
+        }
+    }
+
+    public int uploadQuadrantID(RobotController rc, int startIndex, int indexEnd) throws GameActionException {
         int index = startIndex;
-        while (index < quadSectionEnd && rc.readSharedArray(index) != 0) {
+        while (index < indexEnd && rc.readSharedArray(index) != 0) {
             index++;
         }
-        // We overwrite our quadrants with unoccupied quadrants
-        if (rc.canWriteSharedArray(index, 0) && index < quadSectionEnd) {
+        // We upload the quadrant IDs that our hq are located in
+        if (rc.canWriteSharedArray(index, 0) && index < indexEnd) {
             int quadrant = initialMapQuadrant(rc);
             rc.writeSharedArray(index, quadrant);
             rc.setIndicatorString("UPLOADING QUADRANT: " + quadrant);
         }
-        if (index == quadSectionEnd && rc.canWriteSharedArray(index, 0)) {
-            ArrayList<Integer> list = new ArrayList<Integer>();
-            list.add(quad1);
-            list.add(quad2);
-            list.add(quad3);
-            list.add(quad4);
-            for (int i = quadSection; i < quadSectionEnd; i++) {
-                if (list.contains(rc.readSharedArray(i))) {
-                    list.remove(Integer.valueOf(rc.readSharedArray(i)));
-                }
-            }
+        return index;
+    }
 
-            index = startIndex;
+    public ArrayList<Integer> findUnoccupiedQuadrantID(RobotController rc, int index, int indexEnd) throws GameActionException{
+        // We overwrite our hq quadrants with quadrant IDs that we do not occupy
+        ArrayList<Integer> list = null;
+        list = new ArrayList<Integer>();
+        list.add(quad1);
+        list.add(quad2);
+        list.add(quad3);
+        list.add(quad4);
+        for (int i = quadSection; i < indexEnd; i++) {
+            if (list.contains(rc.readSharedArray(i))) {
+                list.remove(Integer.valueOf(rc.readSharedArray(i)));
+            }
+        }
+        return list;
+    }
+
+    public void translateQuadrantIDToLocations(RobotController rc, ArrayList<Integer> list) throws GameActionException{
+        // We translate the unoccupied quadrant IDs into quadrant locations
+        if (list != null) {
+            int index = quadSection;
             MapLocation location = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+            int x = rc.getMapWidth();
+            int y = rc.getMapHeight();
             for (int i : list) {
                 switch (i) {
                     case quad1:
-                        location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() - rc.getMapHeight() / 4);
+                    // top left
+                        location = new MapLocation(x / 4, y - y / 4);
                         break;
                     case quad2:
-                        location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4,
-                                rc.getMapHeight() - rc.getMapHeight() / 4);
+                    // top right
+                        location = new MapLocation(x - x / 4, y - y / 4);
                         break;
                     case quad3:
-                        location = new MapLocation(rc.getMapWidth() / 4, rc.getMapHeight() / 4);
+                    // bottom left
+                        location = new MapLocation(x / 4, y / 4);
                         break;
                     case quad4:
-                        location = new MapLocation(rc.getMapWidth() - rc.getMapWidth() / 4, rc.getMapHeight() / 4);
+                    // bottome right
+                        location = new MapLocation(x - x / 4, y / 4);
                         break;
                 }
                 rc.writeSharedArray(index, locationToCoordInt(location));
                 index++;
             }
             writeToCommsArray(rc, 0, rc.getRobotCount() * 10 + list.size());
+        } 
+        else {
+            // if list is null, then there are no unoccupied quadrants to translate
+            writeToCommsArray(rc, 0, rc.getRobotCount() * 10);
         }
-
     }
 
     public void uploadWellCoord(RobotController rc, WellInfo[] info) throws GameActionException {
@@ -152,44 +180,74 @@ public class Headquarters extends Base {
                 index++;
             }
             writeToCommsArray(rc, index, locationToCoordInt(wellLocation));
-            // System.out.println("HERE1111111111 at index " + index + ": " +
-            // rc.readSharedArray(index));
         }
     }
-    // /**
-    // * Update the resources section in the comms array every X turns by adding HQ
-    // current resources to resources section
-    // */
-    // public void uploadResourceAmount(RobotController rc) throws
-    // GameActionException {
-    // if (rc.getRoundNum() % 5 == 0 ) {
-    // int index = resourceSection - 1;
-    // for (ResourceType rType : ResourceType.values()) {
-    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
-    // rType.resourceID) + rc.getResourceAmount(rType));
-    // }
-    // rc.setIndicatorString("CURRENT RESOURCES: " +
-    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
-    // ", " + rc.readSharedArray(elixirIndex));
-    // }
-    // }
+  /**
+     * HQ and Amplifiers can assign locations for launchers with soldier roles to attack. 
+     * By default, HQ will upload locations based on ally units created, and current round number
+     * @param rc
+     * @param coord
+     * @throws GameActionException
+     */
+    public void assignAttackLocation(RobotController rc) throws GameActionException{
+        RobotInfo[] enemies = scanForRobots(rc, "enemy");
+        int unoccupiedQuadrantCount = rc.readSharedArray(0) % 10;
+        if (rc.getRoundNum() == 0) {
+            MapLocation center = new MapLocation(rc.getMapWidth() / 2, rc.getMapHeight() / 2);
+            writeToCommsArray(rc, attackSection, locationToCoordInt(center));
+        }
 
-    // /**
-    // * When building a robot, subtract the cost from the resources section in the
-    // comms array only when the amount of resources is greater than 0.
-    // */
-    // public void subtractResourceAmount(RobotController rc, RobotType robotType)
-    // throws GameActionException{
-    // if (rc.readSharedArray(adamantiumIndex) > 0 && rc.readSharedArray(manaIndex)
-    // > 0) {
-    // int index = resourceSection - 1;
-    // for (ResourceType rType : ResourceType.values()) {
-    // rc.writeSharedArray(index + rType.resourceID, rc.readSharedArray(index +
-    // rType.resourceID) - robotType.getBuildCost(rType));
-    // }
-    // rc.setIndicatorString("CURRENT RESOURCES: " +
-    // rc.readSharedArray(adamantiumIndex) + ", " + rc.readSharedArray(manaIndex) +
-    // ", " + rc.readSharedArray(elixirIndex));
-    // }
-    // }
+        // if enemies are at HQ send help
+        if (enemies != null && enemies.length > 0 && rc.readSharedArray(attackSection) != locationToCoordInt(rc.getLocation())) {
+            System.out.println("SOS:" + locationToCoordInt(rc.getLocation()));
+            rc.writeSharedArray(attackSection, locationToCoordInt(rc.getLocation()));
+        } else if (enemies.length == 0 && rc.readSharedArray(attackSection) != 0 && rc.getLocation().equals(coordIntToLocation(rc.readSharedArray(attackSection)))) {
+            // if no enemies are present, and HQ location matches attack location, then HQ removes their location from attack section
+            System.out.println("UPDATING ATTACK SECTION:");
+            rc.writeSharedArray(attackSection, 0);
+        } else if (rc.readSharedArray(0) != 0 && rc.readSharedArray(attackSection) == 0 && rc.getRobotCount() >= rc.readSharedArray(0) / 10 * initialRobotCount * 2) {
+                int quadrantCoord = rc.readSharedArray(quadSection);
+                rc.writeSharedArray(attackSection, quadrantCoord);
+                System.out.println("Targeting location: " + quadrantCoord);
+        } 
+        else if (rc.getRoundNum() >  100 && rc.readSharedArray(attackSection) != 0 && rc.getRobotCount() >= rc.readSharedArray(0) / 10 * initialRobotCount * 2) {
+            int quadrantCoord = rc.readSharedArray(quadSection);
+            rc.writeSharedArray(attackSection, 0);
+            quadrantCoord = rc.readSharedArray(quadSection + 1);
+            // System.out.println("Targeting new location: " + quadrantCoord);
+            rc.writeSharedArray(attackSection, quadrantCoord);
+            int quadrantsAttacked = rc.readSharedArray(attackSection + 1);
+            rc.writeSharedArray(attackSection + 1,  quadrantsAttacked + 1);
+            rc.writeSharedArray(attackSection + 2, rc.getRoundNum());
+        } 
+        else if (rc.getRoundNum() > rc.readSharedArray(attackSection + 2) + 50 && rc.readSharedArray(attackSection + 1) > 0 && rc.getRobotCount() >= rc.readSharedArray(0) / 10 * initialRobotCount * 2) {
+            int quadrantCoord = rc.readSharedArray(quadSection);
+            rc.writeSharedArray(attackSection, 0);
+            quadrantCoord = rc.readSharedArray(quadSection + 1);
+            // System.out.println("Targeting new location: " + quadrantCoord);
+            rc.writeSharedArray(attackSection, quadrantCoord);
+            int quadrantsAttacked = rc.readSharedArray(attackSection + 1);
+            rc.writeSharedArray(attackSection + 1,  quadrantsAttacked + 1);
+            rc.writeSharedArray(attackSection + 2, rc.getRoundNum());
+        }
+    }
+
+    /*
+     * if we have enough units, then iterate through the quadrant section, and direct our forces to attack that quadrant
+     * In attack section, we have attack location, current target quadrant, and turn count of when we declared our attack at that quadrant
+     */
+    public int attackUnoccupiedQuadrants(RobotController rc) throws GameActionException{
+
+        int robotCount = rc.readSharedArray(0) / 10 * initialRobotCount * 2;
+
+        if (rc.readSharedArray(0) != 0 && rc.readSharedArray(attackSection) == 0 && rc.getRobotCount() >= robotCount) {
+            int quadrantCoord = rc.readSharedArray(quadSection);
+            rc.writeSharedArray(attackSection, quadrantCoord);
+            System.out.println("Targeting location: " + quadrantCoord);
+        } 
+        int quadrantCoord = rc.readSharedArray(quadSection);
+        rc.writeSharedArray(attackSection, quadrantCoord);
+        System.out.println("Targeting location: " + quadrantCoord);
+        return quadrantCoord;
+    }
 }
