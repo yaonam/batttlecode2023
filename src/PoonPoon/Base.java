@@ -5,33 +5,31 @@ import java.util.Random;
 import battlecode.common.*;
 
 public abstract class Base {
-    // TODO: add comments @Bethel
+    // quadrant IDs, used in beginning of game
     final int quad1 = 1;
     final int quad2 = 2;
     final int quad3 = 3;
     final int quad4 = 4;
     final int initialRobotCount = 7;
     Direction currentdirection = null;
+
+    // sections or indices of the comms array that is important
     int hqSection = 1;
-    int quadSection = 5;
-    int resourceSection = 8;
-    int attackSection = 11;
-    int wellSection = 15;
-    int adamantiumIndex = resourceSection;
-    int manaIndex = resourceSection + 1;
-    int elixirIndex = resourceSection + 2;
+    int quadSection = hqSection + 4;
+    int attackSection = quadSection + 4;
+    int wellSection = attackSection + 4;
+    int islandSection = wellSection + 12;
 
     int adamantiumWellSection = wellSection + 4;
     int manaWellSection = adamantiumWellSection + 4;
     int elixirWellSection = manaWellSection + 4;
 
-    int adamantiumID = 101;
-    int manaID = 102;
-    int elixirID = 103;
+    // used in bugNav. Robots remember their current direction.
+    Direction currentDirection;
 
-    int maxRobotCount;
-
+    // how close do we want our robots to be within the center of the quadrant
     int quadRadiusFraction = 3 / 16;
+
     static final Random rng = new Random(6147);
     static final Direction[] directions = {
             Direction.NORTH,
@@ -135,27 +133,6 @@ public abstract class Base {
         return getDirectionsTo(rc, thisLoc.add(awayDirection));
     }
 
-    /**
-     * Move to an unoccupied quadrant if there are enough friendly units nearby.
-     * Otherwise, return to hq.
-     */
-    public MapLocation occupyNewQuadrant(RobotController rc) throws GameActionException {
-        MapLocation location = null;
-        location = findNearest(rc, quadSection, resourceSection + 1 - rc.readSharedArray(0) % 10);
-
-        // if a certain amount of ally units are nearby, move towards target quadrant
-        if (location != null && rc.getLocation().distanceSquaredTo(location) >= rc.getMapHeight() * quadRadiusFraction
-                && scanForRobots(rc, "ally").length >= 2) {
-            tryMoveTo(rc, location);
-        } else if (scanForRobots(rc, "ally").length < 2) {
-            returnToHQ(rc);
-        } else {
-            tryMoveTo(rc, getRandDirection(rc));
-        }
-        rc.setIndicatorString("Moving to quadrant: " + location);
-        return location;
-    }
-
     public RobotInfo[] scanForRobots(RobotController rc, String status) throws GameActionException {
         Team team = null;
         switch (status) {
@@ -177,6 +154,9 @@ public abstract class Base {
     }
 
     public void tryMoveTo(RobotController rc, Direction dir) throws GameActionException {
+        if (!rc.canMove(dir)) {
+            dir = bugNav(rc, dir);
+        }
         while (rc.canMove(dir)) {
             rc.move(dir);
         }
@@ -376,12 +356,29 @@ public abstract class Base {
     }
 
     /*
-     * This handles navigating obstacles. Returns direction or Direction.CENTER if no directions are present.
+     * This handles navigating obstacles. Finds the next direction to navigate around obstacles. Returns the direction or Direction.CENTER if no directions are present.
      */
-    public Direction bugNav(RobotController rc, Direction direction) {
-
-        currentdirection = direction;
-
-        return direction;
+    public Direction bugNav(RobotController rc, Direction direction) throws GameActionException{
+        Direction dir = Direction.CENTER;
+        if (currentDirection == null) {
+            currentDirection = direction;
+        }
+        if (rc.canMove(currentDirection)) {
+            return currentDirection;
+        }
+        if (!rc.canMove(currentDirection)) {
+            // We keep the obstacle to our right as we move around it.
+            for (int i = 0; i < 8; i++) {
+                if (rc.canMove(currentDirection)) {
+                    rc.setIndicatorString("BugNav: Moving " + currentDirection);
+                    dir = currentDirection;
+                    currentDirection = currentDirection.rotateRight();
+                    break;
+                } else {
+                    currentDirection = currentDirection.rotateLeft();
+                }
+            }
+        }
+        return dir;
     }
 }
