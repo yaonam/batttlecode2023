@@ -10,9 +10,8 @@ public class Headquarters extends Base {
     Direction buildDirection;
     int robotCount = 0;
     WellInfo[] wellInfo = null;
-    int calledAttackTurn = 2000;
+    int calledAttackTurn = -1;
     int currentIndex = -1;
-    // determines if hq is overrun by enemy units
     boolean hqOverran = false;
     int anchorCount = 0;
 
@@ -33,7 +32,7 @@ public class Headquarters extends Base {
         // Limit the number of units we can build
         setInitialBuildLocation(rc, rc.senseNearbyWells());
         int max = rc.getMapHeight() * rc.getMapWidth() / 4 ;
-        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() <= max && !hqOverran) {
+        if (rc.readSharedArray(0) != 0 && rc.getRobotCount() <= max) {
             buildRobot(rc, RobotType.CARRIER);
             if (anchorCount < 2) {
                 buildRobot(rc, RobotType.LAUNCHER);
@@ -211,22 +210,24 @@ public class Headquarters extends Base {
      */
     public void assignAttackLocation(RobotController rc) throws GameActionException{
         RobotInfo[] enemies = scanForRobots(rc, "enemy");
+
+
         // if hq is overran, remove SOS signal
-        if (enemies.length > 5 && !hqOverran) {
+        if ((enemies.length > 7 || (rc.getRoundNum() > calledAttackTurn && calledAttackTurn > 0)) && !hqOverran) {
             hqOverran = true;
             System.out.println("HQ OVERRAN");
             rc.writeSharedArray(attackSection, 0);
+            rc.writeSharedArray(attackSection + 3, 1);
         }
         // if enemies are at HQ send help, != locationToCoordInt(rc.getLocation()
         if (!hqOverran && enemies != null && enemies.length > 0 && rc.readSharedArray(attackSection) == 0) {
             System.out.println("SOS:" + locationToCoordInt(rc.getLocation()));
             rc.writeSharedArray(attackSection, locationToCoordInt(rc.getLocation()));
             calledAttackTurn = rc.getRoundNum() + 100;
-        } else if (hqOverran && enemies.length == 0 && rc.readSharedArray(attackSection) != 0 && rc.getLocation().equals(coordIntToLocation(rc.readSharedArray(attackSection)))) {
+        } else if (enemies.length == 0 && rc.readSharedArray(attackSection) != 0 && rc.getLocation().equals(coordIntToLocation(rc.readSharedArray(attackSection)))) {
             // if no enemies are present, and HQ location matches attack location, then HQ removes their location from attack section
             System.out.println("REMOVING SOS");
             rc.writeSharedArray(attackSection, 0);
-            hqOverran = false;
         }
         if (rc.readSharedArray(0) != 0) {
             attackQuadrants(rc);

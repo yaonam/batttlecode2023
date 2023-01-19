@@ -98,7 +98,7 @@ public class Launcher extends Base {
     public void soldierMovement(RobotController rc) throws GameActionException{
         // how soldiers will move when not under combat. 
         // If they are occupying enemy HQ (if occupyingEnemyHQ is true), they will not move to attack location.
-        occupyEnemyHQ(rc);
+        // occupyEnemyHQ(rc);
         if (rc.readSharedArray(attackSection) == 0 
             && !occupyingEnemyHQ 
             && rc.getRobotCount() < rc.getMapWidth() * rc.getMapHeight() / 4) {
